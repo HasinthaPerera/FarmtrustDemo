@@ -5,6 +5,7 @@ const links = [
   { href: '/', label: 'Home' },
   { href: '/farmer', label: 'Farmer' },
   { href: '/buyer', label: 'Buyer' },
+  { href: '/ai-predictions', label: 'Future Prices' },
   { href: '/admin', label: 'Admin' },
   { href: '/login', label: 'Login' },
   { href: '/register', label: 'Register' }

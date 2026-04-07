@@ -22,10 +22,12 @@ const sequelize = new Sequelize(
 // Import model functions
 const UserModel = require('./User');
 const CropModel = require('./Crop');
+const OrderModel = require('./Order');
 
 // Initialize models
 const User = UserModel(sequelize);
 const Crop = CropModel(sequelize);
+const Order = OrderModel(sequelize);
 
 // Define associations
 User.hasMany(Crop, {
@@ -38,6 +40,26 @@ Crop.belongsTo(User, {
   as: 'farmer'
 });
 
+User.hasMany(Order, {
+  foreignKey: 'buyerId',
+  as: 'orders'
+});
+
+Order.belongsTo(User, {
+  foreignKey: 'buyerId',
+  as: 'buyer'
+});
+
+Crop.hasMany(Order, {
+  foreignKey: 'cropId',
+  as: 'orders'
+});
+
+Order.belongsTo(Crop, {
+  foreignKey: 'cropId',
+  as: 'crop'
+});
+
 // Test connection and sync
 sequelize.authenticate()
   .then(() => console.log('MySQL connected'))
@@ -48,4 +70,4 @@ sequelize.sync({ alter: true })
   .then(() => console.log('Database synchronized'))
   .catch(err => console.log('Database sync error:', err));
 
-module.exports = { sequelize, User, Crop };
+module.exports = { sequelize, User, Crop, Order };
