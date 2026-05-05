@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,62 @@ const HERO_SLIDES = [
 const Home = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // ---------------------------------------------------------------------------
+  // Bulletproof scroll-reveal: ref on the <section> (guaranteed intrinsic
+  // height from py-24 + heading), currentRef captured before the callback
+  // closes over it, observer.unobserve() stops it after the first fire.
+  // ---------------------------------------------------------------------------
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isInitialLoading) return; // Splash screen is still mounted; sectionRef.current is null — wait.
+
+    const currentRef = sectionRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(currentRef); // stop after first intersection
+        }
+      },
+      { root: null, rootMargin: '0px', threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, [isInitialLoading]); // re-runs when splash finishes → sectionRef is now valid
+
+  // ---------------------------------------------------------------------------
+  // Independent scroll-reveal for the "Platform Highlights" section.
+  // Identical bulletproof pattern: isInitialLoading guard, currentRef capture,
+  // unobserve-after-first-fire, [isInitialLoading] dep array.
+  // ---------------------------------------------------------------------------
+  const highlightsRef = useRef(null);
+  const [isHighlightsVisible, setIsHighlightsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isInitialLoading) return; // wait for splash to finish
+
+    const currentRef = highlightsRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsHighlightsVisible(true);
+          observer.unobserve(currentRef); // stop after first intersection
+        }
+      },
+      { root: null, rootMargin: '0px', threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, [isInitialLoading]); // re-runs when splash finishes → highlightsRef is now valid
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -101,37 +157,86 @@ const Home = () => {
 
       </section>
 
-      <section className="py-24 bg-slate-50 dark:bg-slate-800 transition-colors duration-300">
+      {/* sectionRef on the outermost wrapper — py-24 padding + heading give it
+          guaranteed intrinsic height so the observer fires early & reliably. */}
+      <section ref={sectionRef} className="py-24 bg-slate-50 dark:bg-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-6">
           <h3 className="section-header dark:text-slate-100">Why Choose FarmTrust?</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600">
+
+            {/* ── Card 1 — Transparent Pricing
+                 Mobile : opacity-0 translate-y-10  →  opacity-100 translate-y-0
+                 Desktop: md:-translate-x-20        →  translate-x-0
+                 Delay  : none (fires first) */}
+            <div
+              className={`feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600
+                transition-all duration-1000 ease-out
+                ${isVisible
+                  ? 'opacity-100 translate-x-0 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-0 md:-translate-x-20'
+                }`}
+            >
               <div className="feature-icon mb-4">⚖️</div>
               <h4 className="dark:text-slate-100">Transparent Pricing</h4>
               <p className="dark:text-slate-300">Automated market analysis delivers fair quotes for farmers and buyers, eliminating middleman markup.</p>
             </div>
-            <div className="feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600">
+
+            {/* ── Card 2 — Secure Payments
+                 Mobile & Desktop: opacity-0 translate-y-10/20  →  opacity-100 translate-y-0
+                 Delay: 200ms */}
+            <div
+              className={`feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600
+                transition-all duration-1000 ease-out delay-200
+                ${isVisible
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-20'
+                }`}
+            >
               <div className="feature-icon mb-4">🔒</div>
               <h4 className="dark:text-slate-100">Secure Payments</h4>
               <p className="dark:text-slate-300">Protected escrow workflows and encrypted transfers give both parties confidence and contract safety.</p>
             </div>
-            <div className="feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600">
+
+            {/* ── Card 3 — Verified Trust
+                 Mobile : opacity-0 translate-y-10  →  opacity-100 translate-y-0
+                 Desktop: md:translate-x-20         →  translate-x-0
+                 Delay  : 400ms */}
+            <div
+              className={`feature-card text-left dark:bg-slate-700/60 dark:border dark:border-slate-600
+                transition-all duration-1000 ease-out delay-400
+                ${isVisible
+                  ? 'opacity-100 translate-x-0 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-0 md:translate-x-20'
+                }`}
+            >
               <div className="feature-icon mb-4">✔️</div>
               <h4 className="dark:text-slate-100">Verified Trust</h4>
               <p className="dark:text-slate-300">Blockchain-anchored verification badges and quality ratings make trust decisions instant and audit-ready.</p>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-white dark:bg-slate-900 transition-colors duration-300">
+      {/* Platform Highlights — highlightsRef on the outermost <section> guarantees
+          intrinsic height (py-24 + heading), so the observer fires reliably. */}
+      <section ref={highlightsRef} className="py-24 bg-white dark:bg-slate-900 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-6">
           <h3 className="section-header dark:text-slate-100">Platform Highlights</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
 
-            {/* Card 1 — Fair Pricing */}
-            <div className="glass-card text-center dark:bg-slate-800 dark:border dark:border-slate-700">
+            {/* Card 1 — Fair Pricing
+                 Mobile : opacity-0 translate-y-10  →  opacity-100 translate-y-0
+                 Desktop: md:-translate-x-20        →  translate-x-0
+                 Delay  : 100ms */}
+            <div
+              className={`glass-card text-center dark:bg-slate-800 dark:border dark:border-slate-700
+                transition-all duration-1000 ease-out delay-100
+                ${isHighlightsVisible
+                  ? 'opacity-100 translate-x-0 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-0 md:-translate-x-20'
+                }`}
+            >
               <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -141,8 +246,17 @@ const Home = () => {
               <p className="text-slate-600 dark:text-slate-300">AI-powered market intelligence ensures transparent and fair pricing for all transactions.</p>
             </div>
 
-            {/* Card 2 — Secure Payments */}
-            <div className="card-lg text-center hover:shadow-lg transition-shadow dark:bg-slate-800 dark:border dark:border-slate-700">
+            {/* Card 2 — Secure Payments
+                 Mobile & Desktop: opacity-0 translate-y-10/20  →  opacity-100 translate-y-0
+                 Delay: 200ms */}
+            <div
+              className={`card-lg text-center hover:shadow-lg dark:bg-slate-800 dark:border dark:border-slate-700
+                transition-all duration-1000 ease-out delay-200
+                ${isHighlightsVisible
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-20'
+                }`}
+            >
               <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -152,8 +266,18 @@ const Home = () => {
               <p className="text-slate-600 dark:text-slate-300">Safe, encrypted transactions with escrow and multiple payment options for peace of mind.</p>
             </div>
 
-            {/* Card 3 — Trust Marks */}
-            <div className="card-lg text-center hover:shadow-lg transition-shadow dark:bg-slate-800 dark:border dark:border-slate-700">
+            {/* Card 3 — Trust Marks
+                 Mobile : opacity-0 translate-y-10  →  opacity-100 translate-y-0
+                 Desktop: md:translate-x-20         →  translate-x-0
+                 Delay  : 400ms */}
+            <div
+              className={`card-lg text-center hover:shadow-lg dark:bg-slate-800 dark:border dark:border-slate-700
+                transition-all duration-1000 ease-out delay-400
+                ${isHighlightsVisible
+                  ? 'opacity-100 translate-x-0 translate-y-0'
+                  : 'opacity-0 translate-y-10 md:translate-y-0 md:translate-x-20'
+                }`}
+            >
               <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
