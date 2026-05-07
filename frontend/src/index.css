@@ -17,7 +17,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display font-bold tracking-tight;
   }
 
@@ -144,19 +149,34 @@
     @apply bg-primary-50 border border-primary-200 text-primary-800 rounded-xl p-4;
   }
 
-  .top-banner {
-    @apply py-16 md:py-24 bg-gradient-to-r from-primary-600 via-emerald-500 to-primary-700 text-white overflow-hidden relative;
+  /* ── Hero Slideshow ──────────────────────────────────────────────────── */
+
+  /* Outer section: fixed height, clips the sliding track, centres content  */
+  .hero-slideshow-section {
+    @apply relative overflow-hidden flex items-center justify-center;
+    min-height: 480px;
+    padding: 4rem 0;
+    /* equivalent to py-16 */
   }
 
-  .top-banner::before {
-    content: '';
+  @media (min-width: 768px) {
+    .hero-slideshow-section {
+      padding: 6rem 0;
+    }
+
+    /* md:py-24 */
+  }
+
+
+  .hero-overlay {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.26), transparent 45%), radial-gradient(circle at 80% 25%, rgba(255,255,255,0.22), transparent 40%);
-    opacity: 0.75;
+    background: rgba(0, 0, 0, 0.38);
+    z-index: 1;
     pointer-events: none;
   }
 
+  /* Content layer — identical positioning to the old .hero-text             */
   .hero-text {
     @apply relative z-10 text-white;
   }
@@ -177,14 +197,14 @@
     content: '';
     position: absolute;
     inset: -10px;
-    background: linear-gradient(120deg, rgba(16,185,129,0.18), rgba(5,150,105,0.1));
+    background: linear-gradient(120deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.1));
     filter: blur(24px);
     opacity: 0.9;
     z-index: 0;
     transform: scale(1.1);
   }
 
-  .feature-card > * {
+  .feature-card>* {
     position: relative;
     z-index: 10;
   }
@@ -207,6 +227,7 @@
     opacity: 0;
     transform: translateY(12px) scale(0.995);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -216,4 +237,3 @@
 .page-transition {
   animation: pageSlideFade 360ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-

@@ -70,10 +70,10 @@ const FarmerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-display font-bold text-primary-900">Farmer Dashboard</h1>
+          <h1 className="text-3xl font-display font-bold text-primary-900 dark:text-primary-400">Farmer Dashboard</h1>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="btn-primary"
@@ -83,59 +83,25 @@ const FarmerDashboard = () => {
         </div>
 
         {showAddForm && (
-          <div className="glass-card mb-8 p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Add New Crop</h3>
+          <div className="glass-card dark:bg-slate-800 dark:border dark:border-slate-700 mb-8 p-6">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Add New Crop</h3>
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="form-label">Crop Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Organic Tomatoes"
-                    required
-                    className="input-field"
-                  />
+                  <label className="form-label dark:text-slate-300">Crop Name</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g., Organic Tomatoes" required className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
                 </div>
                 <div>
-                  <label className="form-label">Quantity</label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 100 kg"
-                    required
-                    min="1"
-                    className="input-field"
-                  />
+                  <label className="form-label dark:text-slate-300">Quantity</label>
+                  <input type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} placeholder="e.g., 100 kg" required min="1" className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
                 </div>
                 <div>
-                  <label className="form-label">Price per Unit ($)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 2.50"
-                    required
-                    min="0.01"
-                    step="0.01"
-                    className="input-field"
-                  />
+                  <label className="form-label dark:text-slate-300">Price per Unit ($)</label>
+                  <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="e.g., 2.50" required min="0.01" step="0.01" className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
                 </div>
                 <div>
-                  <label className="form-label">Description (Optional)</label>
-                  <input
-                    type="text"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Additional details about your crop"
-                    className="input-field"
-                  />
+                  <label className="form-label dark:text-slate-300">Description (Optional)</label>
+                  <input type="text" name="description" value={formData.description} onChange={handleInputChange} placeholder="Additional details about your crop" className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
                 </div>
               </div>
               <div className="flex gap-4">
@@ -171,18 +137,18 @@ const FarmerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {crops.length > 0 ? (
             crops.map(crop => (
-              <div key={crop._id} className="glass-card hover:shadow-2xl transition-transform transform hover:-translate-y-1">
+              <div key={crop._id} className="glass-card dark:bg-slate-800 dark:border dark:border-slate-700 hover:shadow-2xl transition-transform transform hover:-translate-y-1">
                 <h3 className="text-xl font-bold text-primary mb-2">{crop.name}</h3>
-                <p className="text-slate-600 mb-2"><strong>Quantity:</strong> {crop.quantity} kg</p>
-                <p className="text-slate-600 mb-2"><strong>Price:</strong> ${crop.price}/kg</p>
-                {crop.description && <p className="text-slate-600"><strong>Description:</strong> {crop.description}</p>}
+                <p className="text-slate-600 dark:text-slate-300 mb-2"><strong>Quantity:</strong> {crop.quantity} kg</p>
+                <p className="text-slate-600 dark:text-slate-300 mb-2"><strong>Price:</strong> ${crop.price}/kg</p>
+                {crop.description && <p className="text-slate-600 dark:text-slate-300"><strong>Description:</strong> {crop.description}</p>}
               </div>
             ))
           ) : (
             <div className="col-span-full text-center py-12">
               <div className="text-6xl mb-4">🌾</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">No crops listed yet</h3>
-              <p className="text-slate-600 mb-4">Start by adding your first crop to the marketplace!</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">No crops listed yet</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">Start by adding your first crop to the marketplace!</p>
               <button
                 onClick={() => setShowAddForm(true)}
                 className="btn-primary"

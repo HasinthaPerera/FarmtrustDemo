@@ -8,8 +8,9 @@ const links = [
   { href: '/ai-predictions', label: 'Future Prices' },
   { href: '/admin', label: 'Admin' },
   { href: '/login', label: 'Login' },
-  { href: '/register', label: 'Register' }
 ];
+
+const REGISTER_HREF = '/register';
 
 const Navbar = () => {
   const location = useLocation();
@@ -19,11 +20,15 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 backdrop-blur bg-white/80 border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold">FT</span>
-          </div>
+          <img
+            src="/main_logo.png"
+            alt="FarmTrust logo"
+            className="h-10 w-auto object-contain"
+          />
           <div>
-            <h1 className="text-2xl font-display font-bold text-primary-900">FarmTrust</h1>
+            <h1 className="text-2xl font-display font-bold text-primary-900">
+              FarmTrust
+            </h1>
             <p className="text-xs text-slate-500">Agriculture marketplace</p>
           </div>
         </Link>
@@ -33,13 +38,29 @@ const Navbar = () => {
             <Link
               key={href}
               to={href}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                location.pathname === href ? 'bg-primary-100 text-primary-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+              className={`px-3 py-2 text-sm font-semibold transition
+  ${location.pathname === href
+                  ? 'border-b-2 border-green-500 text-green-700'
+                  : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               {label}
             </Link>
           ))}
+
+          {/* Register — CTA button when inactive, standard active link when on the page */}
+          <Link
+            to={REGISTER_HREF}
+            className={
+              location.pathname === REGISTER_HREF
+                ? // Active state: looks exactly like other active nav items + bottom border line
+                'px-2 py-2 text-sm font-semibold transition border-b-2 border-green-500 text-green-700 bg-transparent'
+                : // Inactive state: prominent CTA button
+                'px-4 py-2 text-sm font-semibold transition rounded-md bg-primary-600 text-white hover:bg-primary-700'
+            }
+          >
+            Register
+          </Link>
         </div>
 
         <button
@@ -59,13 +80,27 @@ const Navbar = () => {
                 key={href}
                 to={href}
                 onClick={() => setNavOpen(false)}
-                className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                  location.pathname === href ? 'bg-primary-100 text-primary-800' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${location.pathname === href ? 'bg-primary-100 text-primary-800' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
               >
                 {label}
               </Link>
             ))}
+
+            {/* Register — CTA button (inactive) / active link (active) in mobile menu */}
+            <Link
+              to={REGISTER_HREF}
+              onClick={() => setNavOpen(false)}
+              className={
+                location.pathname === REGISTER_HREF
+                  ? // Active: standard highlighted mobile link
+                  'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-primary-100 text-primary-800'
+                  : // Inactive: CTA button style
+                  'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-primary-600 text-white hover:bg-primary-700'
+              }
+            >
+              Register
+            </Link>
           </div>
         </div>
       )}
