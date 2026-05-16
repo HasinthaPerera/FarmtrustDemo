@@ -6,6 +6,21 @@ const router = express.Router();
 // Retrieve the AI service URL from environment variables, defaulting to localhost for development
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000";
 
+// GET /crops  ─ returns sorted unique crop/variety names from the AI service dataset
+router.get("/crops", async (req, res) => {
+    try {
+        const response = await axios.get(`${AI_SERVICE_URL}/crops`);
+        res.json(response.data);
+    } catch (error) {
+        console.error("[Predict Route] Error fetching crop list:", error.message);
+        res.status(error.response?.status || 500).json({
+            error: "Failed to fetch crop list",
+            details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        });
+    }
+});
+
+// GET /predict/:product  ─ proxy to AI service for a specific crop prediction
 router.get("/:product", async (req, res) => {
     try {
         const { product } = req.params;
