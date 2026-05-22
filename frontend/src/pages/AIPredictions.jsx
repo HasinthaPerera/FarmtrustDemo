@@ -42,14 +42,24 @@ const AIPredictions = () => {
         }
 
         // 2. Fetch summary for every crop to build sidebar data
-        const summaryPromises = cropNames.map(crop => 
-          fetch(`${AI_URL}/summary/${encodeURIComponent(crop)}`).then(res => {
-            if (!res.ok) throw new Error(`Failed to fetch summary for ${crop}`);
-            return res.json();
-          })
+        // Use allSettled so a single 404 doesn't crash the whole page
+        const summaryResults = await Promise.allSettled(
+          cropNames.map(crop =>
+            fetch(`${AI_URL}/summary/${encodeURIComponent(crop)}`).then(res => {
+              if (!res.ok) throw new Error(`No summary for ${crop}`);
+              return res.json();
+            })
+          )
         );
 
-        const summaries = await Promise.all(summaryPromises);
+        // Keep only successful responses
+        const summaries = summaryResults
+          .filter(r => r.status === 'fulfilled')
+          .map(r => r.value);
+
+        if (summaries.length === 0) {
+          throw new Error('No crop summaries could be loaded');
+        }
 
         // 3. Map into sidebarCrops shape
         const mappedCrops = summaries.map(summary => ({
