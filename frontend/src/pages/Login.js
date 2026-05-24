@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '', role: 'farmer' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -117,20 +117,6 @@ const Login = () => {
                 required
                 className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400 text-sm py-2"
               />
-            </div>
-
-            <div className="form-group mb-3">
-              <label className="form-label dark:text-slate-300 text-sm">Sign in as</label>
-              <select
-                name="role"
-                onChange={onChange}
-                value={formData.role}
-                className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm py-2"
-              >
-                <option value="farmer">Farmer</option>
-                <option value="buyer">Buyer</option>
-                <option value="admin">Admin</option>
-              </select>
             </div>
 
             <button type="submit" disabled={loading} className="btn-primary w-full mb-3 text-base py-2">

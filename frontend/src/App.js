@@ -1,10 +1,9 @@
 import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Auth from './pages/Auth';
 import FarmerDashboard from './pages/FarmerDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import AdminPanel from './pages/AdminPanel';
@@ -21,8 +20,11 @@ function AnimatedRoutes() {
       <Routes>
         {/* ── Public routes ── */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Canonical auth entry point — covers login + register */}
+        <Route path="/auth" element={<Auth />} />
+        {/* Legacy redirects — keep old URLs working */}
+        <Route path="/login"    element={<Navigate to="/auth" replace />} />
+        <Route path="/register" element={<Navigate to="/auth" replace />} />
 
         {/* ── Protected: Farmers & Admins only ── */}
         <Route

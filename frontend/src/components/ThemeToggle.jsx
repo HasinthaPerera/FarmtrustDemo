@@ -42,13 +42,13 @@ const ThemeToggle = () => {
         shadow-lg
         transition-all duration-300 ease-in-out
         focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600
-        bg-slate-900 text-slate-100
-        dark:bg-slate-100 dark:text-slate-900
+        bg-white text-slate-700 border border-slate-200
+        dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600
         hover:scale-110 active:scale-95
       "
     >
       {isDark ? (
-        // Sun icon — shown when dark mode is active (click to go light)
+        // DARK mode is active → show SUN icon (click to switch to LIGHT)
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="w-6 h-6"
@@ -65,7 +65,7 @@ const ThemeToggle = () => {
           />
         </svg>
       ) : (
-        // Moon icon — shown when light mode is active (click to go dark)
+        // LIGHT mode is active → show MOON icon (click to switch to DARK)
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="w-6 h-6"

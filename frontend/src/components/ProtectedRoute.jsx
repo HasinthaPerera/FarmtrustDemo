@@ -42,10 +42,10 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   // ── Step 2: AUTHENTICATE ──────────────────────────────────────────────────
-  // No authenticated user → send to login, preserving the intended URL so we
-  // can redirect back after a successful sign-in (via location.state if needed).
+  // No authenticated user → send to the unified /auth page. Using replace so
+  // the protected route is not pushed onto the history stack (Back button skips it).
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // ── Step 3: AUTHORIZE ────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ const NAV_LINKS_BY_ROLE = {
   admin:    [],
 };
 
-const REGISTER_HREF = '/register';
+const AUTH_HREF = '/auth';
 
 // ---------------------------------------------------------------------------
 // Navbar component
@@ -113,30 +113,17 @@ const Navbar = () => {
 
           {isGuest ? (
             <>
-              {/* Login — standard nav link */}
+              {/* Single Sign In CTA — routes to unified /auth page */}
               <Link
-                to="/login"
-                className={`px-3 py-2 text-sm font-semibold transition
-  ${location.pathname === '/login'
-                    ? 'border-b-2 border-green-500 text-green-700'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                Login
-              </Link>
-
-              {/* Register — CTA button when inactive, standard active link when on the page */}
-              <Link
-                to={REGISTER_HREF}
+                id="navbar-signin-btn"
+                to={AUTH_HREF}
                 className={
-                  location.pathname === REGISTER_HREF
-                    ? // Active state: looks exactly like other active nav items + bottom border line
-                      'px-2 py-2 text-sm font-semibold transition border-b-2 border-green-500 text-green-700 bg-transparent'
-                    : // Inactive state: prominent CTA button
-                      'px-4 py-2 text-sm font-semibold transition rounded-md bg-primary-600 text-white hover:bg-primary-700'
+                  location.pathname === AUTH_HREF
+                    ? 'px-4 py-2 text-sm font-semibold transition rounded-md border-b-2 border-emerald-500 text-emerald-600 bg-transparent'
+                    : 'px-4 py-2 text-sm font-semibold transition rounded-md bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
                 }
               >
-                Register
+                Sign In
               </Link>
             </>
           ) : (
@@ -182,32 +169,18 @@ const Navbar = () => {
 
             {isGuest ? (
               <>
-                {/* Login — standard mobile link */}
+                {/* Single Sign In CTA (mobile) — routes to unified /auth page */}
                 <Link
-                  to="/login"
-                  onClick={() => setNavOpen(false)}
-                  className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                    location.pathname === '/login'
-                      ? 'bg-primary-100 text-primary-800'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  Login
-                </Link>
-
-                {/* Register — CTA button (inactive) / active link (active) in mobile menu */}
-                <Link
-                  to={REGISTER_HREF}
+                  id="navbar-mobile-signin-btn"
+                  to={AUTH_HREF}
                   onClick={() => setNavOpen(false)}
                   className={
-                    location.pathname === REGISTER_HREF
-                      ? // Active: standard highlighted mobile link
-                        'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-primary-100 text-primary-800'
-                      : // Inactive: CTA button style
-                        'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-primary-600 text-white hover:bg-primary-700'
+                    location.pathname === AUTH_HREF
+                      ? 'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-emerald-100 text-emerald-800'
+                      : 'block px-3 py-2 rounded-lg text-sm font-semibold transition bg-emerald-500 text-white hover:bg-emerald-600'
                   }
                 >
-                  Register
+                  Sign In
                 </Link>
               </>
             ) : (
