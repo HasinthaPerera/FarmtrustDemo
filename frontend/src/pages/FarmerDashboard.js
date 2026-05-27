@@ -13,6 +13,19 @@ const CROP_EMOJI_MAP = {
   cucumber: '🥒', avocado: '🥑', eggplant: '🍆', radish: '🌱',
 };
 
+const SL_DISTRICTS = [
+  'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+  'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+  'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+  'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+  'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya',
+];
+
+const AI_CROPS = [
+  'Beans', 'Brinjal', 'Cabbage', 'Carrot', 'Green Chilli',
+  'Lime', 'Pumpkin', 'Snake gourd', 'Tomato'
+];
+
 const getCropEmoji = (name = '') => {
   const key = name.toLowerCase();
   for (const [word, emoji] of Object.entries(CROP_EMOJI_MAP)) {
@@ -28,7 +41,8 @@ const FarmerDashboard = () => {
     name: '',
     quantity: '',
     price: '',
-    description: ''
+    description: '',
+    district: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -74,7 +88,7 @@ const FarmerDashboard = () => {
       await client.post('/crops', formData, config);
 
       // Reset form and hide it
-      setFormData({ name: '', quantity: '', price: '', description: '' });
+      setFormData({ name: '', quantity: '', price: '', description: '', district: '' });
       setShowAddForm(false);
 
       // Refresh crops list
@@ -109,7 +123,18 @@ const FarmerDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="form-label dark:text-slate-300">Crop Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g., Organic Tomatoes" required className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
+                  <select
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  >
+                    <option value="" disabled>Select a crop...</option>
+                    {AI_CROPS.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="form-label dark:text-slate-300">Quantity</label>
@@ -122,6 +147,21 @@ const FarmerDashboard = () => {
                 <div>
                   <label className="form-label dark:text-slate-300">Description (Optional)</label>
                   <input type="text" name="description" value={formData.description} onChange={handleInputChange} placeholder="Additional details about your crop" className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400" />
+                </div>
+                <div>
+                  <label className="form-label dark:text-slate-300">District</label>
+                  <select
+                    name="district"
+                    value={formData.district}
+                    onChange={handleInputChange}
+                    required
+                    className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  >
+                    <option value="" disabled>Select selling district...</option>
+                    {SL_DISTRICTS.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="flex gap-4">

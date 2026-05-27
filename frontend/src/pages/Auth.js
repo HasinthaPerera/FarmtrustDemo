@@ -102,6 +102,25 @@ const Auth = () => {
   const [registerError, setRegisterError] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
 
+  // ── OTP state ──
+  const [otpStep, setOtpStep] = useState(false);   // true = OTP entry screen visible
+  const [otpValue, setOtpValue] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpSuccess, setOtpSuccess] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0); // seconds remaining
+
+  // Start a 60-second resend cooldown
+  const startCooldown = () => {
+    setResendCooldown(60);
+    const timer = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // ── Login handler ────────────────────────────────────────────────────────
   const handleLogin = async e => {
     e.preventDefault();
@@ -133,19 +152,68 @@ const Auth = () => {
     }
   };
 
-  // ── Register handler ─────────────────────────────────────────────────────
-  const handleRegister = async e => {
+  // ── Step 1: Send OTP ──────────────────────────────────────────────────────
+  const handleSendOtp = async e => {
     e.preventDefault();
+    if (!registerData.district) {
+      setRegisterError('Please select your district.');
+      return;
+    }
     setRegisterLoading(true);
     setRegisterError('');
     try {
-      const res = await client.post('/auth/register', registerData);
+      await client.post('/auth/send-otp', registerData);
+      setOtpStep(true);
+      setOtpValue('');
+      setOtpError('');
+      setOtpSuccess('');
+      startCooldown();
+    } catch (err) {
+      setRegisterError(err.response?.data?.msg || 'Failed to send verification code. Please try again.');
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  // ── Step 2: Verify OTP & create account ──────────────────────────────────
+  const handleVerifyOtp = async e => {
+    e.preventDefault();
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const res = await client.post('/auth/verify-otp', {
+        email: registerData.email,
+        otp:   otpValue.trim(),
+      });
+      // Account created — log the user in
       localStorage.setItem('token', res.data.token);
       setAuthToken(res.data.token);
-      window.location.href = registerData.role === 'farmer' ? '/farmer' : '/buyer';
+      login({
+        id:    res.data.user.id,
+        name:  res.data.user.name,
+        email: res.data.user.email,
+        role:  res.data.user.role,
+      });
+      const destination = ROLE_ROUTES[res.data.user.role] ?? '/';
+      navigate(destination, { replace: true });
     } catch (err) {
-      setRegisterError(err.response?.data?.msg || 'Registration failed. Please try again.');
-      setRegisterLoading(false);
+      setOtpError(err.response?.data?.msg || 'Invalid or expired code. Please try again.');
+      setOtpLoading(false);
+    }
+  };
+
+  // ── Resend OTP ────────────────────────────────────────────────────────────
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setOtpError('');
+    setOtpSuccess('');
+    try {
+      await client.post('/auth/send-otp', registerData);
+      setOtpSuccess('A new code has been sent to your inbox.');
+      setOtpValue('');
+      startCooldown();
+    } catch (err) {
+      setOtpError(err.response?.data?.msg || 'Failed to resend code.');
     }
   };
 
@@ -292,85 +360,182 @@ const Auth = () => {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleRegister}>
-            <AuthInput
-              label="Full Name"
-              name="name"
-              placeholder="Kamal Perera"
-              value={registerData.name}
-              onChange={e => setRegisterData({ ...registerData, name: e.target.value })}
-              required
-            />
-            <AuthInput
-              label="Email Address"
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              value={registerData.email}
-              onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
-              required
-            />
-            <AuthInput
-              label="Password"
-              type="password"
-              name="password"
-              placeholder="Create a strong password"
-              value={registerData.password}
-              onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
-              required
-            />
+          {/* ── Step 1: Registration Form ── */}
+          {!otpStep && (
+            <form onSubmit={handleSendOtp}>
+              <AuthInput
+                label="Full Name"
+                name="name"
+                placeholder="Kamal Perera"
+                value={registerData.name}
+                onChange={e => setRegisterData({ ...registerData, name: e.target.value })}
+                required
+              />
+              <AuthInput
+                label="Email Address"
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                value={registerData.email}
+                onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                required
+              />
+              <AuthInput
+                label="Password"
+                type="password"
+                name="password"
+                placeholder="Create a strong password"
+                value={registerData.password}
+                onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                required
+              />
 
-            {/* Two-column selects */}
-            <div className="grid grid-cols-2 gap-3">
-              <AuthSelect
-                label="I am a"
-                name="role"
-                value={registerData.role}
-                onChange={e => setRegisterData({ ...registerData, role: e.target.value })}
-                options={[
-                  { value: 'buyer', label: 'Buyer' },
-                  { value: 'farmer', label: 'Farmer' },
-                ]}
-              />
-              <AuthSelect
-                label="District"
-                name="district"
-                value={registerData.district}
-                onChange={e => setRegisterData({ ...registerData, district: e.target.value })}
-                options={[
-                  { value: '', label: 'Select district' },
-                  ...SL_DISTRICTS.map(d => ({ value: d, label: d })),
-                ]}
-              />
+              {/* Two-column selects */}
+              <div className="grid grid-cols-2 gap-3">
+                <AuthSelect
+                  label="I am a"
+                  name="role"
+                  value={registerData.role}
+                  onChange={e => setRegisterData({ ...registerData, role: e.target.value })}
+                  options={[
+                    { value: 'buyer', label: 'Buyer' },
+                    { value: 'farmer', label: 'Farmer' },
+                  ]}
+                />
+                <AuthSelect
+                  label="District"
+                  name="district"
+                  value={registerData.district}
+                  onChange={e => setRegisterData({ ...registerData, district: e.target.value })}
+                  options={[
+                    { value: '', label: 'Select district' },
+                    ...SL_DISTRICTS.map(d => ({ value: d, label: d })),
+                  ]}
+                />
+              </div>
+
+              {/* Terms */}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                By creating an account, you agree to our{' '}
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Terms of Service</span> and{' '}
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Privacy Policy</span>.
+              </p>
+
+              {/* Submit → sends OTP */}
+              <button
+                id="register-submit-btn"
+                type="submit"
+                disabled={registerLoading}
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
+                           transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {registerLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Sending code…
+                  </span>
+                ) : 'Continue →'}
+              </button>
+            </form>
+          )}
+
+          {/* ── Step 2: OTP Verification Screen ── */}
+          {otpStep && (
+            <div>
+              {/* Back link */}
+              <button
+                onClick={() => { setOtpStep(false); setOtpError(''); setOtpValue(''); }}
+                className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors mb-5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to registration
+              </button>
+
+              {/* Info banner */}
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-xl px-4 py-3 mb-5">
+                <p className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+                  📧 We've sent a 6-digit code to
+                </p>
+                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200 mt-0.5 truncate">
+                  {registerData.email}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Check your inbox and spam folder. Code expires in 10 minutes.</p>
+              </div>
+
+              {/* OTP errors / success */}
+              {otpError && (
+                <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm">
+                  {otpError}
+                </div>
+              )}
+              {otpSuccess && (
+                <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-sm">
+                  {otpSuccess}
+                </div>
+              )}
+
+              <form onSubmit={handleVerifyOtp}>
+                {/* OTP input */}
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Verification Code
+                  </label>
+                  <input
+                    id="otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="••••••"
+                    value={otpValue}
+                    onChange={e => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    autoFocus
+                    className="w-full text-center text-3xl font-mono font-bold tracking-[0.5em] bg-slate-50 border border-slate-300
+                               dark:bg-slate-800/80 dark:border-slate-700 rounded-xl px-4 py-4
+                               text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600
+                               focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500
+                               transition-all duration-200"
+                  />
+                </div>
+
+                {/* Verify button */}
+                <button
+                  id="otp-verify-btn"
+                  type="submit"
+                  disabled={otpLoading || otpValue.length !== 6}
+                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
+                             transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed mb-3"
+                >
+                  {otpLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Verifying…
+                    </span>
+                  ) : 'Verify & Create Account'}
+                </button>
+              </form>
+
+              {/* Resend */}
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                Didn't receive the code?{' '}
+                <button
+                  onClick={handleResendOtp}
+                  disabled={resendCooldown > 0}
+                  className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                </button>
+              </p>
             </div>
-
-            {/* Terms */}
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              By creating an account, you agree to our{' '}
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Terms of Service</span> and{' '}
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Privacy Policy</span>.
-            </p>
-
-            {/* Submit */}
-            <button
-              id="register-submit-btn"
-              type="submit"
-              disabled={registerLoading}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
-                         transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {registerLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Creating account…
-                </span>
-              ) : 'Create Account'}
-            </button>
-          </form>
+          )}
         </div>
 
         {/* ════════════════════════════════════════════════════════════

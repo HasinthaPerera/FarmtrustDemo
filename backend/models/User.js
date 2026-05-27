@@ -27,6 +27,16 @@ const User = (sequelize) => {
     role: {
       type: DataTypes.ENUM('farmer', 'buyer', 'admin'),
       defaultValue: 'buyer'
+    },
+    district: {
+      type: DataTypes.ENUM(
+        'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+        'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+        'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+        'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+        'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+      ),
+      allowNull: false
     }
   }, {
     timestamps: true,

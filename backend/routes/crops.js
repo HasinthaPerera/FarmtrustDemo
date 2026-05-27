@@ -1,6 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const { Crop, User } = require('../models');
+const { sendNewListingAlert } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -24,29 +25,71 @@ router.get('/', async (req, res) => {
 
 // Add crop (farmer only)
 router.post('/', auth, async (req, res) => {
-  const { name, quantity, price, description } = req.body;
+  const { name, quantity, price, description, district } = req.body;
   try {
     const crop = await Crop.create({
       name,
       quantity: parseInt(quantity),
       price: parseFloat(price),
       description,
+      district,
       farmerId: req.user.id
     });
 
-    // Fetch the created crop with farmer info
+    // Fetch the created crop with farmer info (we need farmer name and district)
     const cropWithFarmer = await Crop.findByPk(crop.id, {
       include: [{
         model: User,
         as: 'farmer',
-        attributes: ['id', 'name', 'email']
+        attributes: ['id', 'name', 'email', 'district']
       }]
     });
 
-    res.json(cropWithFarmer);
+    // ── 1. Immediate Response ───────────────────────────────────────────────
+    // Return early to ensure the UI feels lightning fast
+    res.status(201).json(cropWithFarmer);
+
+    // ── 2. Background Fire-and-Forget Task ──────────────────────────────────
+    if (cropWithFarmer && cropWithFarmer.district) {
+      const farmerName = cropWithFarmer.farmer ? cropWithFarmer.farmer.name : 'A local farmer';
+      const cropDistrict = cropWithFarmer.district;
+      
+      User.findAll({
+        where: {
+          role: 'buyer',
+          district: cropDistrict
+        },
+        attributes: ['email', 'name']
+      }).then(buyers => {
+        if (buyers.length > 0) {
+          const productDetails = {
+            cropName: cropWithFarmer.name,
+            quantity: cropWithFarmer.quantity,
+            price: cropWithFarmer.price,
+            farmerName: farmerName
+          };
+
+          // Map over buyers and send emails concurrently
+          Promise.allSettled(
+            buyers.map(buyer => 
+              sendNewListingAlert(buyer.email, buyer.name, productDetails)
+            )
+          ).then(results => {
+             const successful = results.filter(r => r.status === 'fulfilled').length;
+             console.log(`[Alerts] Sent ${successful}/${buyers.length} new listing alerts in ${cropDistrict}`);
+          });
+        }
+      }).catch(err => {
+         console.error('[Alerts] Background task failed to fetch buyers:', err);
+      });
+    }
+
   } catch (err) {
     console.error('Add crop error:', err);
-    res.status(500).json({ msg: 'Server error' });
+    // Only send error if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({ msg: 'Server error' });
+    }
   }
 });
 
