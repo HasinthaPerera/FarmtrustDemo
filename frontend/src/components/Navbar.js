@@ -119,8 +119,8 @@ const Navbar = () => {
                 to={AUTH_HREF}
                 className={
                   location.pathname === AUTH_HREF
-                    ? 'px-4 py-2 text-sm font-semibold transition rounded-md border-b-2 border-emerald-500 text-emerald-600 bg-transparent'
-                    : 'px-4 py-2 text-sm font-semibold transition rounded-md bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                    ? 'px-5 py-2 rounded-full border border-emerald-500 bg-emerald-500 text-white text-sm font-semibold transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                    : 'px-5 py-2 rounded-full border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 text-sm font-semibold transition-all duration-300 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] active:scale-95'
                 }
               >
                 Sign In

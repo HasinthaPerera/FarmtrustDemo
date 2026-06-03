@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
+
 
 // ---------------------------------------------------------------------------
 // Hero slideshow — high-quality Unsplash agriculture images.
@@ -89,6 +91,33 @@ const CTA_CONFIG = {
   buyer: { label: 'Go to Marketplace', route: '/buyer' },
   farmer: { label: 'Go to Dashboard', route: '/farmer' },
   admin: { label: 'Go to Admin Panel', route: '/admin' },
+};
+
+// ---------------------------------------------------------------------------
+// Typewriter heading — split into words so each fades in sequentially.
+// Using words (not chars) preserves responsive line-wrapping on mobile.
+// ---------------------------------------------------------------------------
+const HERO_HEADING_WORDS = 'Empower Your Agricultural Business'.split(' ');
+
+// Parent variant: orchestrates staggered reveal of each child word.
+const headingContainerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.12,   // 4 words × 0.12s ≈ 0.48s total type time
+      delayChildren: 0.1,      // tiny lead-in before first word appears
+    },
+  },
+};
+
+// Child variant: each word pops in (pure opacity — no vertical slide,
+// so it feels like characters being typed rather than falling in).
+const headingWordVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.25, ease: 'easeOut' },
+  },
 };
 
 const Home = () => {
@@ -185,10 +214,10 @@ const Home = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
 
       {/* Hero Section — sliding image background */}
-      <section className="hero-slideshow-section">
+      <section className="relative h-[calc(100vh-73px)] w-full overflow-hidden">
 
         {/* ── Overflow-hidden viewport (clips the sliding track) ────────── */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 z-0 h-full w-full overflow-hidden">
 
           {/* ── Sliding track: w-full keeps width = 1 viewport; each slide
                is min-w-full so translateX(-N*100%) shifts exactly N slides */}
@@ -199,12 +228,9 @@ const Home = () => {
             {HERO_SLIDES.map((slide, i) => (
               <div
                 key={i}
-                className="flex-shrink-0 w-full h-full"
+                className="flex-shrink-0 w-full h-full bg-cover bg-center bg-no-repeat"
                 style={{
-                  backgroundImage: `url('${slide.url}')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
+                  backgroundImage: `url('${slide.url}')`
                 }}
                 role="img"
                 aria-label={slide.alt}
@@ -214,21 +240,78 @@ const Home = () => {
 
         </div>{/* end viewport */}
 
-        {/* ── Dark scrim: bg-black/40 = 40% opacity, z-10 above the images ─ */}
-        <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
+        {/* ── Dark scrim: bg-black/40 = 40% opacity, sits in background ─ */}
+        <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
 
-        {/* ── Content — z-20 sits above both the images and the scrim ─────── */}
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-20 text-white">
-          <h2 className="text-5xl md:text-6xl font-display font-bold mb-4">Empower Your Agricultural Business</h2>
-          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-10">FarmTrust connects farmers and buyers with transparency, trust, and fair pricing. Grow your business with our intelligent marketplace.</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            {/* Primary CTA — destination and label driven by auth role */}
-            <Link to={ctaConfig.route} className="cta-button text-lg">{ctaConfig.label}</Link>
-            {/* Secondary CTA — always visible, guides guests to sign up */}
+        {/* ── Protective fade overlay: bottom-to-top gradient to protect contrast ─ */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent z-0 pointer-events-none" />
+
+        {/* ── Content — sits securely above the background carousel ─────── */}
+        <div className="relative z-10 h-full flex flex-col justify-end pb-16 md:pb-24 w-full max-w-7xl mx-auto px-6 text-center text-white">
+
+          {/* ── Typewriter heading: each word fades in via staggerChildren ─── */}
+          <motion.h2
+            className="text-5xl md:text-6xl font-hero-display font-bold italic mb-4 tracking-tight"
+            variants={headingContainerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {HERO_HEADING_WORDS.map((word, i) => (
+              <motion.span
+                key={i}
+                variants={headingWordVariants}
+                // inline-block so each word is an independent animation target
+                // while still wrapping naturally on narrow viewports
+                className="inline-block mr-[0.25em] last:mr-0"
+              >
+                {word}
+              </motion.span>
+            ))}
+          </motion.h2>
+
+          {/* ── Paragraph: fade-up, starts after typing finishes (≈1.5s) ─── */}
+          <motion.p
+            className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-10 drop-shadow-md"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 1.5 }}
+          >
+            FarmTrust connects farmers and buyers with transparency, trust, and fair pricing. Grow your business with our intelligent marketplace.
+          </motion.p>
+
+          {/* ── Buttons: fade-up last, 300ms after paragraph begins (≈1.8s) ── */}
+          <motion.div
+            className="flex flex-col sm:flex-row justify-center gap-4"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 1.8 }}
+          >
+            {/* Primary CTA — rich gradient, inner glow, outer shadow, and animated arrow */}
+            <Link
+              to={ctaConfig.route}
+              className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-bold text-white rounded-full overflow-hidden transition-all duration-300 active:scale-95 bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),_0_4px_20px_rgba(16,185,129,0.4)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),_0_6px_25px_rgba(16,185,129,0.6)] hover:-translate-y-1"
+            >
+              {ctaConfig.label}
+              <svg
+                className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </Link>
+            {/* Secondary CTA — premium frosted glassmorphism */}
             {!user && (
-              <Link to="/register" className="btn-outline text-lg">Get Started Free</Link>
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-bold text-white rounded-full bg-white/10 backdrop-blur-md border border-white/30 transition-all duration-300 hover:bg-white/20 hover:border-white/50 hover:-translate-y-1 active:scale-95"
+              >
+                Get Started Free
+              </Link>
             )}
-          </div>
+          </motion.div>
         </div>
 
       </section>
