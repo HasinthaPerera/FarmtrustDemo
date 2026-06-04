@@ -10,6 +10,8 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Poppins', 'system-ui', 'sans-serif'],
+        // Premium serif for the Hero heading — Playfair Display
+        'hero-display': ['"Playfair Display"', 'Georgia', 'serif'],
       },
       colors: {
         primary: {
