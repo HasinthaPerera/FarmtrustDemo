@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 
 // Add crop (farmer only)
 router.post('/', auth, async (req, res) => {
-  const { name, quantity, price, description, district } = req.body;
+  const { name, quantity, price, description, district, discount } = req.body;
   try {
     const crop = await Crop.create({
       name,
@@ -33,6 +33,7 @@ router.post('/', auth, async (req, res) => {
       price: parseFloat(price),
       description,
       district,
+      discount: discount ? parseInt(discount) : 0,
       farmerId: req.user.id
     });
 

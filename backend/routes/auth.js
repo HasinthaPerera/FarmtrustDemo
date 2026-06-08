@@ -3,8 +3,10 @@ const bcrypt    = require('bcryptjs');
 const jwt       = require('jsonwebtoken');
 const { sendOTPEmail } = require('../utils/emailService');
 const { User }  = require('../models');
+const { OAuth2Client } = require('google-auth-library');
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Note: Nodemailer logic and templates are now centralized in utils/emailService.js
 
@@ -237,6 +239,74 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// ── POST /api/auth/google ──────────────────────────────────────────────────
+// Receive Google ID Token -> verify with Google -> find or create User -> return JWT
+router.post('/google', async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ msg: 'Google token is required' });
+  }
+
+  try {
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name } = payload;
+
+    if (!email) {
+      return res.status(400).json({ msg: 'Email not provided by Google account' });
+    }
+
+    // Find user by googleId, or by email to link them
+    let user = await User.findOne({ where: { googleId } });
+    if (!user) {
+      user = await User.findOne({ where: { email: email.toLowerCase() } });
+      if (user) {
+        // Link Google ID to existing user if they have the same email
+        user.googleId = googleId;
+        await user.save();
+        console.log(`[Google Auth] Linked existing user: ${email}`);
+      } else {
+        // Create a new user with buyer role by default
+        user = await User.create({
+          name: name || email.split('@')[0],
+          email: email.toLowerCase(),
+          googleId,
+          role: 'buyer', // Default role
+          // district and password will be null
+        });
+        console.log(`[Google Auth] Created new user: ${email}`);
+      }
+    }
+
+    // Issue JWT token (same as email/password login)
+    const jwtPayload = { user: { id: user.id } };
+    jwt.sign(
+      jwtPayload,
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' },
+      (err, jwtToken) => {
+        if (err) throw err;
+        res.json({
+          token: jwtToken,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
+      }
+    );
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(500).json({ msg: 'Google authentication failed' });
   }
 });
 

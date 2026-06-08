@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import client, { setAuthToken } from '../api/client';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -21,13 +21,72 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // New State for OTP Flow
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState(['', '', '', '', '', '']); // Array for 6 boxes
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleCredentialResponse = async (response) => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await client.post('/auth/google', { token: response.credential });
+      console.log('[Google Register] API RESPONSE:', res.data);
+
+      localStorage.setItem('token', res.data.token);
+      const rawRole = String(res.data.user?.role || '').toLowerCase() || 'buyer';
+      const userData = {
+        id: res.data.user?.id ?? null,
+        name: res.data.user?.name || res.data.user?.email,
+        email: res.data.user?.email,
+        role: rawRole,
+      };
+
+      console.log('[Google Register] CONSTRUCTED USER:', userData);
+      login(userData);
+      setAuthToken(res.data.token);
+
+      const destination = rawRole === 'farmer' ? '/farmer' : '/buyer';
+      navigate(destination, { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Google Sign-In failed');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initializeGoogleSignIn = () => {
+      const btnContainer = document.getElementById("googleSignInDivRegister");
+      if (window.google && btnContainer) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '968903403453-5idtlom7pl374q09t3l8jruddv1htbci.apps.googleusercontent.com',
+          callback: handleCredentialResponse
+        });
+        window.google.accounts.id.renderButton(
+          btnContainer,
+          { theme: "outline", size: "large", width: "380", text: "continue_with" }
+        );
+        return true;
+      }
+      return false;
+    };
+
+    const success = initializeGoogleSignIn();
+    if (success) return;
+
+    const interval = setInterval(() => {
+      const ok = initializeGoogleSignIn();
+      if (ok) {
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -52,7 +111,7 @@ const Register = () => {
     setLoading(true);
     setError('');
     const otpString = otp.join('');
-    
+
     if (otpString.length !== 6) {
       setError('Please enter a valid 6-digit code.');
       setLoading(false);
@@ -64,11 +123,11 @@ const Register = () => {
         email: formData.email,
         otp: otpString,
       });
-      
+
       // Successful Login
       localStorage.setItem('token', res.data.token);
       setAuthToken(res.data.token);
-      
+
       // Update global auth state
       login({
         id: res.data.user.id,
@@ -117,8 +176,37 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-primary-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center px-4 transition-colors duration-300">
-      <div className="max-w-md w-full">
+    <div className="relative overflow-hidden min-h-screen flex items-center justify-center px-4 transition-colors duration-300"
+      style={{
+        background: 'linear-gradient(180deg, #fff1f5 0%, #f3e8ff 35%, #e0f2fe 70%, #d1fae5 100%)'
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none hidden dark:block"
+        style={{
+          background: 'linear-gradient(180deg, #1e0a2e 0%, #1a1040 35%, #0d1f3c 70%, #022c22 100%)'
+        }}
+      />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #f9a8d4, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-25 dark:opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, #c4b5fd, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-24 -right-24 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #7dd3fc, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/2 left-1/4 w-[400px] h-[300px] rounded-full opacity-0 dark:opacity-25 blur-[90px]"
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-md w-full">
         <div className="glass-card shadow-2xl border border-white/30 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
           <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6 mb-4 text-white rounded-t-xl">
             <h2 className="text-xl font-display font-bold">{step === 1 ? 'Join FarmTrust' : 'Verify Email'}</h2>
@@ -229,6 +317,19 @@ const Register = () => {
               <button type="submit" disabled={loading} className="btn-primary w-full mb-4 text-lg">
                 {loading ? 'Sending Code...' : 'Create Account'}
               </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-300 dark:border-slate-600"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-white dark:bg-slate-800 text-slate-500">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center mb-4">
+                <div id="googleSignInDivRegister" className="w-full flex justify-center"></div>
+              </div>
             </form>
           ) : (
             // --- STEP 2: OTP Verification ---
@@ -253,11 +354,11 @@ const Register = () => {
               <button type="submit" disabled={loading || otp.join('').length !== 6} className="btn-primary w-full mb-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? 'Verifying...' : 'Verify Account'}
               </button>
-              
+
               <div className="text-center mt-4">
-                 <button type="button" onClick={() => { setStep(1); setOtp(['','','','','','']); setError(''); }} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
-                    Back to Registration
-                 </button>
+                <button type="button" onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setError(''); }} className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                  Back to Registration
+                </button>
               </div>
             </form>
           )}

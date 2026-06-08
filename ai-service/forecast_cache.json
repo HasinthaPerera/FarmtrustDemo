@@ -1,58 +1,58 @@
 {
-  "last_updated": "2026-06-05",
+  "last_updated": "2026-06-08",
   "data": {
     "Beans": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 481.94,
-          "lower": 329.42,
-          "upper": 632.2
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 502.02,
-          "lower": 362.38,
-          "upper": 661.72
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 508.36,
-          "lower": 357.04,
-          "upper": 661.42
-        },
-        {
           "date": "2026-06-08",
           "predicted": 526.61,
-          "lower": 365.88,
-          "upper": 689.02
+          "lower": 372.13,
+          "upper": 678.36
         },
         {
           "date": "2026-06-09",
           "predicted": 540.98,
-          "lower": 380.31,
-          "upper": 689.83
+          "lower": 383.74,
+          "upper": 694.81
         },
         {
           "date": "2026-06-10",
           "predicted": 530.6,
-          "lower": 379.57,
-          "upper": 686.89
+          "lower": 375.14,
+          "upper": 683.32
         },
         {
           "date": "2026-06-11",
           "predicted": 519.43,
-          "lower": 370.01,
-          "upper": 674.67
+          "lower": 372.23,
+          "upper": 686.01
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 526.92,
+          "lower": 368.07,
+          "upper": 685.99
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 547.0,
+          "lower": 400.77,
+          "upper": 702.56
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 552.81,
+          "lower": 393.16,
+          "upper": 704.11
         }
       ],
       "summary": {
         "product": "Beans",
-        "tomorrow_price": 502.02,
+        "tomorrow_price": 540.98,
         "last_week_avg": 450.0,
         "last_month_avg": 383.33,
-        "change_week_percent": 11.6,
-        "change_month_percent": 31.0,
+        "change_week_percent": 20.2,
+        "change_month_percent": 41.1,
         "market_status": "HIGH",
         "min_30d": 150.0,
         "max_30d": 550.0,
@@ -62,55 +62,55 @@
     "Brinjal": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 320.23,
-          "lower": 195.22,
-          "upper": 439.61
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 299.06,
-          "lower": 171.1,
-          "upper": 415.51
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 296.79,
-          "lower": 172.83,
-          "upper": 406.33
-        },
-        {
           "date": "2026-06-08",
           "predicted": 307.34,
-          "lower": 190.17,
-          "upper": 439.03
+          "lower": 187.93,
+          "upper": 420.37
         },
         {
           "date": "2026-06-09",
           "predicted": 309.3,
-          "lower": 186.22,
-          "upper": 434.77
+          "lower": 183.16,
+          "upper": 430.2
         },
         {
           "date": "2026-06-10",
           "predicted": 313.31,
-          "lower": 193.48,
-          "upper": 435.98
+          "lower": 189.28,
+          "upper": 434.7
         },
         {
           "date": "2026-06-11",
           "predicted": 303.21,
-          "lower": 180.94,
-          "upper": 432.91
+          "lower": 171.31,
+          "upper": 430.62
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 302.8,
+          "lower": 179.83,
+          "upper": 415.75
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 280.94,
+          "lower": 156.94,
+          "upper": 410.52
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 278.18,
+          "lower": 152.63,
+          "upper": 411.98
         }
       ],
       "summary": {
         "product": "Brinjal",
-        "tomorrow_price": 299.06,
+        "tomorrow_price": 309.3,
         "last_week_avg": 335.71,
         "last_month_avg": 207.33,
-        "change_week_percent": -10.9,
-        "change_month_percent": 44.2,
+        "change_week_percent": -7.9,
+        "change_month_percent": 49.2,
         "market_status": "HIGH",
         "min_30d": 50.0,
         "max_30d": 350.0,
@@ -120,55 +120,55 @@
     "Cabbage": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 175.96,
-          "lower": 53.93,
-          "upper": 296.64
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 134.79,
-          "lower": -0.62,
-          "upper": 258.08
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 135.14,
-          "lower": 17.32,
-          "upper": 251.05
-        },
-        {
           "date": "2026-06-08",
           "predicted": 178.57,
-          "lower": 51.26,
-          "upper": 305.2
+          "lower": 57.92,
+          "upper": 303.6
         },
         {
           "date": "2026-06-09",
           "predicted": 173.33,
-          "lower": 49.65,
-          "upper": 288.53
+          "lower": 53.73,
+          "upper": 300.52
         },
         {
           "date": "2026-06-10",
           "predicted": 178.7,
-          "lower": 48.67,
-          "upper": 311.93
+          "lower": 57.6,
+          "upper": 306.38
         },
         {
           "date": "2026-06-11",
           "predicted": 175.27,
-          "lower": 42.82,
-          "upper": 298.74
+          "lower": 48.9,
+          "upper": 301.61
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 171.66,
+          "lower": 48.97,
+          "upper": 296.41
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 127.22,
+          "lower": 5.96,
+          "upper": 256.33
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 124.46,
+          "lower": -0.41,
+          "upper": 251.22
         }
       ],
       "summary": {
         "product": "Cabbage",
-        "tomorrow_price": 134.79,
+        "tomorrow_price": 173.33,
         "last_week_avg": 77.14,
         "last_month_avg": 87.33,
-        "change_week_percent": 74.7,
-        "change_month_percent": 54.3,
+        "change_week_percent": 124.7,
+        "change_month_percent": 98.5,
         "market_status": "HIGH",
         "min_30d": 50.0,
         "max_30d": 120.0,
@@ -178,56 +178,56 @@
     "Carrot": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 318.19,
-          "lower": 150.36,
-          "upper": 491.95
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 216.17,
-          "lower": 54.66,
-          "upper": 385.37
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 214.16,
-          "lower": 44.65,
-          "upper": 372.62
-        },
-        {
           "date": "2026-06-08",
           "predicted": 311.93,
-          "lower": 147.95,
-          "upper": 469.72
+          "lower": 140.09,
+          "upper": 481.99
         },
         {
           "date": "2026-06-09",
           "predicted": 310.54,
-          "lower": 147.25,
-          "upper": 460.48
+          "lower": 149.22,
+          "upper": 475.62
         },
         {
           "date": "2026-06-10",
           "predicted": 308.59,
-          "lower": 137.44,
-          "upper": 466.86
+          "lower": 146.24,
+          "upper": 463.95
         },
         {
           "date": "2026-06-11",
           "predicted": 302.43,
-          "lower": 136.0,
-          "upper": 462.36
+          "lower": 123.74,
+          "upper": 464.11
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 299.62,
+          "lower": 132.21,
+          "upper": 472.96
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 195.61,
+          "lower": 37.8,
+          "upper": 358.96
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 192.0,
+          "lower": 19.19,
+          "upper": 351.95
         }
       ],
       "summary": {
         "product": "Carrot",
-        "tomorrow_price": 216.17,
+        "tomorrow_price": 310.54,
         "last_week_avg": 202.86,
         "last_month_avg": 245.67,
-        "change_week_percent": 6.6,
-        "change_month_percent": -12.0,
-        "market_status": "LOW",
+        "change_week_percent": 53.1,
+        "change_month_percent": 26.4,
+        "market_status": "HIGH",
         "min_30d": 200.0,
         "max_30d": 350.0,
         "trend": "UP"
@@ -236,55 +236,55 @@
     "Green Chilli": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 369.71,
-          "lower": 175.63,
-          "upper": 556.64
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 273.96,
-          "lower": 73.89,
-          "upper": 466.41
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 279.9,
-          "lower": 80.07,
-          "upper": 476.13
-        },
-        {
           "date": "2026-06-08",
           "predicted": 401.5,
-          "lower": 230.45,
-          "upper": 589.06
+          "lower": 207.73,
+          "upper": 602.75
         },
         {
           "date": "2026-06-09",
           "predicted": 392.77,
-          "lower": 203.08,
-          "upper": 584.41
+          "lower": 197.3,
+          "upper": 589.29
         },
         {
           "date": "2026-06-10",
           "predicted": 383.24,
-          "lower": 179.67,
-          "upper": 571.76
+          "lower": 203.73,
+          "upper": 579.24
         },
         {
           "date": "2026-06-11",
           "predicted": 382.21,
-          "lower": 193.22,
-          "upper": 577.65
+          "lower": 193.13,
+          "upper": 579.74
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 403.57,
+          "lower": 221.09,
+          "upper": 592.73
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 304.13,
+          "lower": 118.27,
+          "upper": 481.65
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 306.67,
+          "lower": 107.78,
+          "upper": 494.19
         }
       ],
       "summary": {
         "product": "Green Chilli",
-        "tomorrow_price": 273.96,
+        "tomorrow_price": 392.77,
         "last_week_avg": 192.86,
         "last_month_avg": 204.33,
-        "change_week_percent": 42.1,
-        "change_month_percent": 34.1,
+        "change_week_percent": 103.7,
+        "change_month_percent": 92.2,
         "market_status": "HIGH",
         "min_30d": 100.0,
         "max_30d": 300.0,
@@ -294,55 +294,55 @@
     "Lime": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 443.46,
-          "lower": 145.41,
-          "upper": 731.19
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 505.44,
-          "lower": 216.97,
-          "upper": 817.91
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 499.37,
-          "lower": 205.97,
-          "upper": 778.23
-        },
-        {
           "date": "2026-06-08",
           "predicted": 417.41,
-          "lower": 106.2,
-          "upper": 716.55
+          "lower": 128.7,
+          "upper": 709.49
         },
         {
           "date": "2026-06-09",
           "predicted": 424.48,
-          "lower": 110.14,
-          "upper": 713.3
+          "lower": 140.06,
+          "upper": 721.91
         },
         {
           "date": "2026-06-10",
           "predicted": 402.35,
-          "lower": 111.74,
-          "upper": 707.04
+          "lower": 119.34,
+          "upper": 677.61
         },
         {
           "date": "2026-06-11",
           "predicted": 403.1,
-          "lower": 108.44,
-          "upper": 711.71
+          "lower": 100.73,
+          "upper": 680.97
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 405.39,
+          "lower": 102.68,
+          "upper": 696.06
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 469.97,
+          "lower": 173.43,
+          "upper": 763.42
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 467.4,
+          "lower": 193.21,
+          "upper": 770.06
         }
       ],
       "summary": {
         "product": "Lime",
-        "tomorrow_price": 505.44,
+        "tomorrow_price": 424.48,
         "last_week_avg": 371.43,
         "last_month_avg": 204.67,
-        "change_week_percent": 36.1,
-        "change_month_percent": 147.0,
+        "change_week_percent": 14.3,
+        "change_month_percent": 107.4,
         "market_status": "HIGH",
         "min_30d": 80.0,
         "max_30d": 450.0,
@@ -352,55 +352,55 @@
     "Pumpkin": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 71.18,
-          "lower": 18.58,
-          "upper": 122.68
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 50.64,
-          "lower": 0.48,
-          "upper": 101.8
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 50.71,
-          "lower": 2.43,
-          "upper": 101.86
-        },
-        {
           "date": "2026-06-08",
           "predicted": 69.12,
-          "lower": 20.22,
-          "upper": 121.23
+          "lower": 18.89,
+          "upper": 120.78
         },
         {
           "date": "2026-06-09",
           "predicted": 69.46,
-          "lower": 20.16,
-          "upper": 119.58
+          "lower": 22.65,
+          "upper": 120.57
         },
         {
           "date": "2026-06-10",
           "predicted": 71.42,
-          "lower": 18.39,
-          "upper": 119.23
+          "lower": 22.73,
+          "upper": 117.6
         },
         {
           "date": "2026-06-11",
           "predicted": 72.66,
-          "lower": 20.85,
-          "upper": 119.11
+          "lower": 23.15,
+          "upper": 124.94
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 73.48,
+          "lower": 27.07,
+          "upper": 124.72
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 53.82,
+          "lower": 6.05,
+          "upper": 105.35
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 54.77,
+          "lower": 4.93,
+          "upper": 106.02
         }
       ],
       "summary": {
         "product": "Pumpkin",
-        "tomorrow_price": 50.64,
+        "tomorrow_price": 69.46,
         "last_week_avg": 87.14,
         "last_month_avg": 84.67,
-        "change_week_percent": -41.9,
-        "change_month_percent": -40.2,
+        "change_week_percent": -20.3,
+        "change_month_percent": -18.0,
         "market_status": "LOW",
         "min_30d": 50.0,
         "max_30d": 140.0,
@@ -410,55 +410,55 @@
     "Snake gourd": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 281.84,
-          "lower": 199.19,
-          "upper": 366.25
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 249.72,
-          "lower": 170.46,
-          "upper": 333.62
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 248.4,
-          "lower": 165.46,
-          "upper": 327.88
-        },
-        {
           "date": "2026-06-08",
           "predicted": 281.04,
-          "lower": 193.48,
-          "upper": 358.2
+          "lower": 199.6,
+          "upper": 364.88
         },
         {
           "date": "2026-06-09",
           "predicted": 277.05,
-          "lower": 196.97,
-          "upper": 352.22
+          "lower": 197.41,
+          "upper": 360.72
         },
         {
           "date": "2026-06-10",
           "predicted": 278.95,
-          "lower": 200.71,
-          "upper": 362.33
+          "lower": 197.11,
+          "upper": 362.34
         },
         {
           "date": "2026-06-11",
           "predicted": 271.31,
-          "lower": 194.54,
-          "upper": 356.91
+          "lower": 190.54,
+          "upper": 351.88
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 274.37,
+          "lower": 192.85,
+          "upper": 353.11
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 243.04,
+          "lower": 164.13,
+          "upper": 323.48
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 242.35,
+          "lower": 165.63,
+          "upper": 326.7
         }
       ],
       "summary": {
         "product": "Snake gourd",
-        "tomorrow_price": 249.72,
+        "tomorrow_price": 277.05,
         "last_week_avg": 414.29,
         "last_month_avg": 271.0,
-        "change_week_percent": -39.7,
-        "change_month_percent": -7.9,
+        "change_week_percent": -33.1,
+        "change_month_percent": 2.2,
         "market_status": "AVERAGE",
         "min_30d": 130.0,
         "max_30d": 450.0,
@@ -468,55 +468,55 @@
     "Tomato": {
       "forecast": [
         {
-          "date": "2026-06-05",
-          "predicted": 301.4,
-          "lower": 115.85,
-          "upper": 484.4
-        },
-        {
-          "date": "2026-06-06",
-          "predicted": 218.83,
-          "lower": 31.63,
-          "upper": 397.33
-        },
-        {
-          "date": "2026-06-07",
-          "predicted": 215.68,
-          "lower": 33.36,
-          "upper": 400.91
-        },
-        {
           "date": "2026-06-08",
           "predicted": 303.74,
-          "lower": 132.31,
-          "upper": 471.91
+          "lower": 128.49,
+          "upper": 473.18
         },
         {
           "date": "2026-06-09",
           "predicted": 293.72,
-          "lower": 102.92,
-          "upper": 472.32
+          "lower": 120.76,
+          "upper": 468.83
         },
         {
           "date": "2026-06-10",
           "predicted": 292.76,
-          "lower": 118.07,
-          "upper": 484.06
+          "lower": 117.48,
+          "upper": 468.12
         },
         {
           "date": "2026-06-11",
           "predicted": 284.92,
-          "lower": 106.43,
-          "upper": 480.11
+          "lower": 111.24,
+          "upper": 484.93
+        },
+        {
+          "date": "2026-06-12",
+          "predicted": 287.22,
+          "lower": 95.29,
+          "upper": 469.95
+        },
+        {
+          "date": "2026-06-13",
+          "predicted": 208.34,
+          "lower": 14.5,
+          "upper": 402.73
+        },
+        {
+          "date": "2026-06-14",
+          "predicted": 208.57,
+          "lower": 0.24,
+          "upper": 387.35
         }
       ],
       "summary": {
         "product": "Tomato",
-        "tomorrow_price": 218.83,
+        "tomorrow_price": 293.72,
         "last_week_avg": 392.86,
         "last_month_avg": 185.33,
-        "change_week_percent": -44.3,
-        "change_month_percent": 18.1,
+        "change_week_percent": -25.2,
+        "change_month_percent": 58.5,
         "market_status": "HIGH",
         "min_30d": 60.0,
         "max_30d": 500.0,

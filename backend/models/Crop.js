@@ -39,6 +39,15 @@ const Crop = (sequelize) => {
       ),
       allowNull: false
     },
+    discount: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      validate: {
+        min: 0,
+        max: 100
+      }
+    },
     farmerId: {
       type: DataTypes.INTEGER,
       allowNull: false,

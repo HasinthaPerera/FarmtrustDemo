@@ -20,9 +20,14 @@ const User = (sequelize) => {
         isEmail: true
       }
     },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true
+    },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     role: {
       type: DataTypes.ENUM('farmer', 'buyer', 'admin'),
@@ -36,7 +41,7 @@ const User = (sequelize) => {
         'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
         'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
       ),
-      allowNull: false
+      allowNull: true
     }
   }, {
     timestamps: true,
@@ -48,7 +53,7 @@ const User = (sequelize) => {
         }
       },
       beforeUpdate: async (user) => {
-        if (user.changed('password')) {
+        if (user.changed('password') && user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }

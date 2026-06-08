@@ -20,8 +20,8 @@ const NAV_LINKS_BY_ROLE = {
     { href: '/ai-predictions', label: 'Future Prices' },
   ],
   farmer:   [
-    { href: '/farmer',     label: 'Dashboard'    },
     { href: '/farmer',     label: 'My Products'  },
+    { href: '/ai-predictions', label: 'AI Price Page' },
   ],
   admin:    [],
 };

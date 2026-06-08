@@ -2,26 +2,7 @@ import React, { useEffect, useState } from 'react';
 import client from '../api/client';
 import { useCart } from '../context/CartContext';
 import { ShoppingBag } from 'lucide-react';
-
-// ── Image-fallback helper ────────────────────────────────────────────────────
-const CROP_EMOJI_MAP = {
-  banana: '🍌', coconut: '🥥', watermelon: '🍉', mango: '🥭',
-  apple: '🍎', orange: '🍊', grape: '🍇', strawberry: '🍓',
-  tomato: '🍅', potato: '🥔', carrot: '🥕', corn: '🌽',
-  wheat: '🌾', rice: '🍚', onion: '🧅', garlic: '🧄',
-  pepper: '🫑', broccoli: '🥦', spinach: '🥬', pumpkin: '🎃',
-  lemon: '🍋', pineapple: '🍍', peach: '🍑', pear: '🍐',
-  cherry: '🍒', blueberry: '🫐', mushroom: '🍄', cabbage: '🥬',
-  cucumber: '🥒', avocado: '🥑', eggplant: '🍆', radish: '🌱',
-};
-
-const getCropEmoji = (name = '') => {
-  const key = name.toLowerCase();
-  for (const [word, emoji] of Object.entries(CROP_EMOJI_MAP)) {
-    if (key.includes(word)) return emoji;
-  }
-  return '🌿';
-};
+import CropCard from '../components/CropCard';
 
 const BuyerDashboard = () => {
   const { addToCart } = useCart();
@@ -158,10 +139,40 @@ const BuyerDashboard = () => {
   const totalPreview = selectedCrop ? (Number(selectedCrop.price) * Number(quantity || 0)).toFixed(2) : '0.00';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="relative overflow-hidden min-h-screen transition-colors duration-300"
+      style={{
+        background: 'linear-gradient(180deg, #fff1f5 0%, #f3e8ff 35%, #e0f2fe 70%, #d1fae5 100%)'
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none hidden dark:block"
+        style={{
+          background: 'linear-gradient(180deg, #1e0a2e 0%, #1a1040 35%, #0d1f3c 70%, #022c22 100%)'
+        }}
+      />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #f9a8d4, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-25 dark:opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, #c4b5fd, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-24 -right-24 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #7dd3fc, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/2 left-1/4 w-[400px] h-[300px] rounded-full opacity-0 dark:opacity-25 blur-[90px]"
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+        />
+      </div>
+
+      <div className="relative z-10 w-full h-full">
+        <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-display font-bold text-primary-900 dark:text-primary-400">Buyer Dashboard</h1>
+          <h1 className="text-3xl font-display font-bold text-primary-900 dark:text-emerald-300">Buyer Dashboard</h1>
           <span className="badge badge-success">Live Market</span>
         </div>
         <h2 className="page-title">Available Crops</h2>
@@ -174,94 +185,17 @@ const BuyerDashboard = () => {
             className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCrops.length > 0 ? (
-            filteredCrops.map(crop => {
-              const offerPrice = Number(crop.price);
-              const originalPrice = (offerPrice * 1.25).toFixed(2);
-              const discountPct = 20;
-              const emoji = getCropEmoji(crop.name);
-              return (
-                <div
-                  key={crop.id}
-                  className="group relative flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-                >
-                  {/* ── Image / Emoji Area ── */}
-                  <div className="relative h-48 w-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                    {crop.image ? (
-                      <img
-                        src={crop.image}
-                        alt={crop.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <span className="text-7xl select-none group-hover:scale-110 transition-transform duration-300">
-                        {emoji}
-                      </span>
-                    )}
-
-                    {/* Discount badge – top-left */}
-                    <span className="absolute top-3 left-3 bg-violet-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
-                      {discountPct}% Off
-                    </span>
-
-                    {/* Produce tag – bottom-left */}
-                    <span className="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-xs font-semibold px-2.5 py-1 rounded-full border border-white/60 dark:border-slate-600 shadow">
-                      🌱 Fresh Produce
-                    </span>
-                  </div>
-
-                  {/* ── Details Area ── */}
-                  <div className="flex flex-col flex-1 p-4 gap-3">
-                    {/* Title */}
-                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
-                      {crop.name}
-                    </h3>
-
-                    {/* Weight / quantity sub-text */}
-                    <p className="text-sm text-slate-500 dark:text-slate-400 -mt-1">
-                      Available: {crop.quantity} kg
-                    </p>
-
-                    {/* Description */}
-                    {crop.description && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
-                        {crop.description}
-                      </p>
-                    )}
-
-                    {/* Pricing row */}
-                    <div className="flex items-baseline gap-2 mt-auto">
-                      <span className="text-xl font-extrabold text-primary-700 dark:text-primary-400">
-                        ${offerPrice.toFixed(2)}
-                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">/kg</span>
-                      </span>
-                      <span className="text-sm text-slate-400 line-through">
-                        ${originalPrice}
-                      </span>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                      <button
-                        type="button"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400 text-sm font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
-                        onClick={() => addToCart(crop)}
-                      >
-                        🛒 Add to Cart
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold hover:from-primary-700 hover:to-primary-800 shadow-md hover:shadow-lg transition-all duration-200"
-                        onClick={() => openPaymentWindow(crop)}
-                      >
-                        ⚡ Buy Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+            filteredCrops.map(crop => (
+              <CropCard 
+                key={crop.id} 
+                crop={crop} 
+                role="buyer" 
+                onAddToCart={addToCart} 
+                onBuyNow={openPaymentWindow} 
+              />
+            ))
           ) : (
             <div className="col-span-full text-center py-12">
               <div className="text-6xl mb-4">🛒</div>
@@ -351,6 +285,7 @@ const BuyerDashboard = () => {
         </div>
       )}
 
+      </div>
     </div>
   );
 };

@@ -126,7 +126,37 @@ const AIPredictions = () => {
   }, [selectedCrop]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans">
+    <div className="relative overflow-hidden h-screen flex flex-col bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans transition-colors duration-300"
+      style={{
+        background: 'linear-gradient(180deg, #fff1f5 0%, #f3e8ff 35%, #e0f2fe 70%, #d1fae5 100%)'
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none hidden dark:block"
+        style={{
+          background: 'linear-gradient(180deg, #1e0a2e 0%, #1a1040 35%, #0d1f3c 70%, #022c22 100%)'
+        }}
+      />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #f9a8d4, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-25 dark:opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, #c4b5fd, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-24 -right-24 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #7dd3fc, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/2 left-1/4 w-[400px] h-[300px] rounded-full opacity-0 dark:opacity-25 blur-[90px]"
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+        />
+      </div>
+
+      <div className="relative z-10 flex flex-col w-full h-full">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shrink-0">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -175,6 +205,7 @@ const AIPredictions = () => {
             />
           ) : null}
         </div>
+      </div>
       </div>
     </div>
   );

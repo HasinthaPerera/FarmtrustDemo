@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import client, { setAuthToken } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -28,8 +28,8 @@ const GoogleIcon = () => (
 
 // ── Input Field Component ────────────────────────────────────────────────────
 const AuthInput = ({ label, type = 'text', name, placeholder, value, onChange, required, suffix }) => (
-  <div className="mb-4">
-    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 transition-colors duration-300">
+  <div className="mb-2.5">
+    <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 transition-colors duration-300">
       {label}
     </label>
     <div className="relative">
@@ -40,7 +40,7 @@ const AuthInput = ({ label, type = 'text', name, placeholder, value, onChange, r
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full bg-slate-50 border border-slate-300 dark:bg-slate-800/80 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500
+        className="w-full bg-slate-50 border border-slate-300 dark:bg-slate-800/80 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500
                    focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500
                    transition-all duration-200 pr-10"
       />
@@ -55,8 +55,8 @@ const AuthInput = ({ label, type = 'text', name, placeholder, value, onChange, r
 
 // ── Auth Select Component ────────────────────────────────────────────────────
 const AuthSelect = ({ label, name, value, onChange, options }) => (
-  <div className="mb-4">
-    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 transition-colors duration-300">
+  <div className="mb-2.5">
+    <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 transition-colors duration-300">
       {label}
     </label>
     <div className="relative">
@@ -64,7 +64,7 @@ const AuthSelect = ({ label, name, value, onChange, options }) => (
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full bg-slate-50 border border-slate-300 dark:bg-slate-800/80 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-100
+        className="w-full bg-slate-50 border border-slate-300 dark:bg-slate-800/80 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-100
                    focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500
                    transition-all duration-200 appearance-none pr-10"
       >
@@ -183,16 +183,16 @@ const Auth = () => {
     try {
       const res = await client.post('/auth/verify-otp', {
         email: registerData.email,
-        otp:   otpValue.trim(),
+        otp: otpValue.trim(),
       });
       // Account created — log the user in
       localStorage.setItem('token', res.data.token);
       setAuthToken(res.data.token);
       login({
-        id:    res.data.user.id,
-        name:  res.data.user.name,
+        id: res.data.user.id,
+        name: res.data.user.name,
         email: res.data.user.email,
-        role:  res.data.user.role,
+        role: res.data.user.role,
       });
       const destination = ROLE_ROUTES[res.data.user.role] ?? '/';
       navigate(destination, { replace: true });
@@ -217,15 +217,116 @@ const Auth = () => {
     }
   };
 
-  // ── Google placeholder ───────────────────────────────────────────────────
-  const handleGoogleSignIn = () => {
-    alert('Google Sign-In integration coming soon!');
+  const handleCredentialResponse = async (response) => {
+    setLoginLoading(true);
+    setLoginError('');
+    try {
+      const res = await client.post('/auth/google', { token: response.credential });
+      console.log('[Google Login Auth] API RESPONSE:', res.data);
+
+      localStorage.setItem('token', res.data.token);
+      const rawRole = String(res.data.user?.role || '').toLowerCase() || 'buyer';
+      const userData = {
+        id: res.data.user?.id ?? null,
+        name: res.data.user?.name || res.data.user?.email,
+        email: res.data.user?.email,
+        role: rawRole,
+      };
+
+      console.log('[Google Login Auth] CONSTRUCTED USER:', userData);
+      login(userData);
+      setAuthToken(res.data.token);
+
+      const destination = ROLE_ROUTES[userData.role] ?? '/';
+      navigate(destination, { replace: true });
+    } catch (err) {
+      setLoginError(err.response?.data?.msg || 'Google Sign-In failed');
+      setLoginLoading(false);
+    }
   };
 
+  useEffect(() => {
+    const initializeGoogleSignIn = () => {
+      const loginBtnContainer = document.getElementById("googleSignInDivAuth");
+      const registerBtnContainer = document.getElementById("googleSignInDivAuthRegister");
+
+      let expectedButtons = 0;
+      let initializedButtons = 0;
+
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '968903403453-5idtlom7pl374q09t3l8jruddv1htbci.apps.googleusercontent.com',
+          callback: handleCredentialResponse
+        });
+
+        if (loginBtnContainer) {
+          expectedButtons++;
+          window.google.accounts.id.renderButton(
+            loginBtnContainer,
+            { theme: "outline", size: "large", width: "380", text: "continue_with" }
+          );
+          initializedButtons++;
+        }
+
+        if (!otpStep && registerBtnContainer) {
+          expectedButtons++;
+          window.google.accounts.id.renderButton(
+            registerBtnContainer,
+            { theme: "outline", size: "large", width: "380", text: "continue_with" }
+          );
+          initializedButtons++;
+        }
+      }
+
+      return expectedButtons > 0 && initializedButtons >= expectedButtons;
+    };
+
+    const success = initializeGoogleSignIn();
+    if (success) return;
+
+    const interval = setInterval(() => {
+      const ok = initializeGoogleSignIn();
+      if (ok) {
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLogin, otpStep]);
+
   return (
-    <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-300">
-      {/* ── Main container ── */}
-      <div className="relative w-full max-w-5xl h-[680px] rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden flex bg-white dark:bg-slate-900 transition-all duration-300">
+    <div className="relative overflow-hidden min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
+      style={{
+        background: 'linear-gradient(180deg, #fff1f5 0%, #f3e8ff 35%, #e0f2fe 70%, #d1fae5 100%)'
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none hidden dark:block"
+        style={{
+          background: 'linear-gradient(180deg, #1e0a2e 0%, #1a1040 35%, #0d1f3c 70%, #022c22 100%)'
+        }}
+      />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #f9a8d4, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-25 dark:opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, #c4b5fd, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-24 -right-24 w-[500px] h-[500px] rounded-full opacity-30 dark:opacity-20 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, #7dd3fc, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-1/2 left-1/4 w-[400px] h-[300px] rounded-full opacity-0 dark:opacity-25 blur-[90px]"
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-5xl h-[680px] rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden flex bg-white dark:bg-slate-900 transition-all duration-300">
 
         {/* ════════════════════════════════════════════════════════════
             BASE LAYER — Left: Login Form | Right: Register Form
@@ -233,24 +334,24 @@ const Auth = () => {
 
         {/* ── Login Form (LEFT half) ── */}
         <div
-          className="absolute inset-y-0 left-0 w-1/2 bg-white dark:bg-slate-900 flex flex-col justify-center px-10 py-10 overflow-y-auto transition-colors duration-300"
+          className="absolute inset-y-0 left-0 w-1/2 bg-white dark:bg-slate-900 flex flex-col justify-center px-10 py-4 overflow-y-auto transition-colors duration-300"
           style={{ pointerEvents: isLogin ? 'auto' : 'none' }}
         >
           {/* ── Brand mark ── */}
-          <div className="flex flex-col items-center mb-6">
+          <div className="flex flex-col items-center mb-1.5">
             <img
               src="/main_logo.png"
               alt="FarmTrust"
-              className="h-10 w-auto object-contain mb-2"
+              className="h-7 w-auto object-contain mb-1"
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
-            <span className="text-primary-900 dark:text-emerald-900 font-bold text-lg tracking-tight">FarmTrust</span>
+            <span className="text-primary-900 dark:text-emerald-900 font-bold text-base tracking-tight">FarmTrust</span>
           </div>
 
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1 transition-colors duration-300">Welcome Back</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-300">Sign in to continue to FarmTrust</p>
+          <div className="mb-3.5 text-center">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-0.5 transition-colors duration-300">Welcome Back</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300">Sign in to continue to FarmTrust</p>
           </div>
 
           {/* Error */}
@@ -292,21 +393,14 @@ const Auth = () => {
             />
 
             {/* Google Sign In */}
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="w-full mb-4 flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700
-                         bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-600
-                         transition-all duration-200"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
+            <div className="flex justify-center mb-3">
+              <div id="googleSignInDivAuth" className="w-full flex justify-center"></div>
+            </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
-              <span className="text-xs text-slate-500 dark:text-slate-400">or</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">or</span>
               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
             </div>
 
@@ -315,7 +409,7 @@ const Auth = () => {
               id="login-submit-btn"
               type="submit"
               disabled={loginLoading}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
+              className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
                          transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loginLoading ? (
@@ -333,23 +427,23 @@ const Auth = () => {
 
         {/* ── Register Form (RIGHT half) ── */}
         <div
-          className="absolute inset-y-0 right-0 w-1/2 bg-white dark:bg-slate-900 flex flex-col justify-center px-10 py-8 overflow-y-auto transition-colors duration-300"
+          className="absolute inset-y-0 right-0 w-1/2 bg-white dark:bg-slate-900 flex flex-col justify-center px-10 py-4 overflow-y-auto transition-colors duration-300"
           style={{ pointerEvents: !isLogin ? 'auto' : 'none' }}
         >
           {/* ── Brand mark ── */}
-          <div className="flex flex-col items-center mb-5">
+          <div className="flex flex-col items-center mb-1.5">
             <img
               src="/main_logo.png"
               alt="FarmTrust"
-              className="h-10 w-auto object-contain mb-2"
+              className="h-7 w-auto object-contain mb-1"
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
-            <span className="text-primary-900 dark:text-emerald-900 font-bold text-lg tracking-tight">FarmTrust</span>
+            <span className="text-primary-900 dark:text-emerald-900 font-bold text-base tracking-tight">FarmTrust</span>
           </div>
 
           {/* Header */}
-          <div className="mb-5">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1 transition-colors duration-300">Create Account</h2>
+          <div className="mb-3.5 text-center">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-0.5 transition-colors duration-300">Create Account</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-300">Join thousands of farmers and buyers on FarmTrust</p>
           </div>
 
@@ -391,7 +485,7 @@ const Auth = () => {
               />
 
               {/* Two-column selects */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <AuthSelect
                   label="I am a"
                   name="role"
@@ -415,9 +509,9 @@ const Auth = () => {
               </div>
 
               {/* Terms */}
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2.5 text-center leading-relaxed">
                 By creating an account, you agree to our{' '}
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Terms of Service</span> and{' '}
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Terms</span> and{' '}
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer hover:underline">Privacy Policy</span>.
               </p>
 
@@ -426,7 +520,7 @@ const Auth = () => {
                 id="register-submit-btn"
                 type="submit"
                 disabled={registerLoading}
-                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
+                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm
                            transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {registerLoading ? (
@@ -439,6 +533,19 @@ const Auth = () => {
                   </span>
                 ) : 'Continue →'}
               </button>
+
+              <div className="relative my-3">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500">or</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center mb-2">
+                <div id="googleSignInDivAuthRegister" className="w-full flex justify-center"></div>
+              </div>
             </form>
           )}
 
