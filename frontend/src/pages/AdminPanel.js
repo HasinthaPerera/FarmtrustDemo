@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Wheat, Banknote, ShieldCheck, LayoutDashboard, Settings, RefreshCw,
-  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle
+  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw
 } from 'lucide-react';
 
 const RECENT_ACTIVITY = [
@@ -126,6 +126,35 @@ const AdminPanel = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
 
+  // Trash bin states
+  const [showTrash, setShowTrash] = useState(false);
+  const [deletedUsers, setDeletedUsers] = useState([
+    {
+      id: 101,
+      name: 'Samantha Silva',
+      email: 'samantha.s@gmail.com',
+      role: 'buyer',
+      status: 'inactive',
+      registeredDate: 'May 10, 2026',
+      district: 'Galle'
+    },
+    {
+      id: 102,
+      name: 'Ravi Wickrama',
+      email: 'ravi.wick@gmail.com',
+      role: 'farmer',
+      status: 'inactive',
+      registeredDate: 'May 12, 2026',
+      district: 'Kandy'
+    }
+  ]);
+  const [isPermanentDeleteModalOpen, setIsPermanentDeleteModalOpen] = useState(false);
+  const [permanentDeletingUserId, setPermanentDeletingUserId] = useState(null);
+  
+  // Validation error states
+  const [addError, setAddError] = useState('');
+  const [editError, setEditError] = useState('');
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
@@ -138,6 +167,14 @@ const AdminPanel = () => {
   const handleAddUser = (e) => {
     e.preventDefault();
     if (!newUser.name || !newUser.email) return;
+
+    // Check for duplicate emails
+    const emailExists = users.some(u => u.email.toLowerCase() === newUser.email.toLowerCase()) || 
+                        deletedUsers.some(u => u.email.toLowerCase() === newUser.email.toLowerCase());
+    if (emailExists) {
+      setAddError('This email address already exists (either active or in trash).');
+      return;
+    }
     
     const now = new Date();
     const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -150,6 +187,7 @@ const AdminPanel = () => {
 
     setUsers([createdUser, ...users]);
     setNewUser({ name: '', email: '', role: 'buyer', status: 'active', district: 'Colombo' });
+    setAddError('');
     setIsAddModalOpen(false);
   };
 
@@ -157,15 +195,39 @@ const AdminPanel = () => {
     e.preventDefault();
     if (!editingUser.name || !editingUser.email) return;
 
+    // Check if email is used by another user
+    const emailExists = users.some(u => u.id !== editingUser.id && u.email.toLowerCase() === editingUser.email.toLowerCase()) ||
+                        deletedUsers.some(u => u.id !== editingUser.id && u.email.toLowerCase() === editingUser.email.toLowerCase());
+    if (emailExists) {
+      setEditError('This email is already registered to another user.');
+      return;
+    }
+
     setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
     setEditingUser(null);
+    setEditError('');
     setIsEditModalOpen(false);
   };
 
   const handleDeleteUser = () => {
-    setUsers(users.filter(u => u.id !== deletingUserId));
+    const userToTrash = users.find(u => u.id === deletingUserId);
+    if (userToTrash) {
+      setDeletedUsers([{ ...userToTrash, status: 'inactive' }, ...deletedUsers]);
+      setUsers(users.filter(u => u.id !== deletingUserId));
+    }
     setDeletingUserId(null);
     setIsDeleteModalOpen(false);
+  };
+
+  const handleRestoreUser = (user) => {
+    setUsers([{ ...user, status: 'active' }, ...users]);
+    setDeletedUsers(deletedUsers.filter(u => u.id !== user.id));
+  };
+
+  const handlePermanentDeleteUser = () => {
+    setDeletedUsers(deletedUsers.filter(u => u.id !== permanentDeletingUserId));
+    setPermanentDeletingUserId(null);
+    setIsPermanentDeleteModalOpen(false);
   };
 
   // Get initials for avatar
@@ -269,7 +331,9 @@ const AdminPanel = () => {
   // 2. Users View (Main focus to match user's image)
   const UsersView = () => {
     // Client-side filtering logic
-    const filteredUsers = users.filter(user => {
+    const targetUsers = showTrash ? deletedUsers : users;
+    
+    const filteredUsers = targetUsers.filter(user => {
       const matchesSearch = 
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -279,9 +343,11 @@ const AdminPanel = () => {
         user.role.toLowerCase() === roleFilter.toLowerCase();
       
       const matchesStatus = 
-        statusFilter === 'All Statuses' || 
-        (statusFilter === 'Active Only' && user.status === 'active') || 
-        (statusFilter === 'Inactive Only' && user.status === 'inactive');
+        showTrash ? true : (
+          statusFilter === 'All Statuses' || 
+          (statusFilter === 'Active Only' && user.status === 'active') || 
+          (statusFilter === 'Inactive Only' && user.status === 'inactive')
+        );
 
       return matchesSearch && matchesRole && matchesStatus;
     });
@@ -298,7 +364,7 @@ const AdminPanel = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search users by name or email..."
+              placeholder={showTrash ? "Search trash by name or email..." : "Search users by name or email..."}
               className="block w-full pl-10 pr-4 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-emerald-500 transition-colors"
             />
           </div>
@@ -321,29 +387,53 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Status Filter Dropdown */}
-            <div className="relative w-full md:w-40">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
-              >
-                <option value="All Statuses">All Statuses</option>
-                <option value="Active Only">Active Only</option>
-                <option value="Inactive Only">Inactive Only</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-[#94a3b8]" />
+            {/* Status Filter Dropdown - Hidden in Trash view */}
+            {!showTrash && (
+              <div className="relative w-full md:w-40">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                >
+                  <option value="All Statuses">All Statuses</option>
+                  <option value="Active Only">Active Only</option>
+                  <option value="Inactive Only">Inactive Only</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-[#94a3b8]" />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Trash Bin Toggle Button */}
+            <button
+              onClick={() => setShowTrash(!showTrash)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all border whitespace-nowrap ${
+                showTrash 
+                  ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30' 
+                  : 'bg-[#1e293b] border-slate-700 text-[#94a3b8] hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              {showTrash ? (
+                <>
+                  <Users className="w-4 h-4" /> Active Users
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" /> Trash ({deletedUsers.length})
+                </>
+              )}
+            </button>
 
             {/* Add User Button */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-emerald-900/30 whitespace-nowrap"
-            >
-              <UserPlus className="w-4 h-4" /> Add User
-            </button>
+            {!showTrash && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-emerald-900/30 whitespace-nowrap"
+              >
+                <UserPlus className="w-4 h-4" /> Add User
+              </button>
+            )}
           </div>
         </div>
 
@@ -365,7 +455,7 @@ const AdminPanel = () => {
                 {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-8 text-center text-[#64748b]">
-                      No users found matching filters.
+                      {showTrash ? "No deleted users found in the trash." : "No users found matching filters."}
                     </td>
                   </tr>
                 ) : (
@@ -406,11 +496,13 @@ const AdminPanel = () => {
                       {/* STATUS */}
                       <td className="px-6 py-4">
                         <span className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
-                          user.status === 'active' 
-                            ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50' 
-                            : 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                          showTrash 
+                            ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                            : user.status === 'active' 
+                              ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50' 
+                              : 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
                         }`}>
-                          {user.status}
+                          {showTrash ? 'deleted' : user.status}
                         </span>
                       </td>
 
@@ -419,22 +511,41 @@ const AdminPanel = () => {
 
                       {/* ACTIONS */}
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => { setEditingUser(user); setIsEditModalOpen(true); }}
-                            className="p-1 text-[#94a3b8] hover:text-white transition-colors"
-                            title="Edit User"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => { setDeletingUserId(user.id); setIsDeleteModalOpen(true); }}
-                            className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                            title="Delete User"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        {showTrash ? (
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleRestoreUser(user)}
+                              className="p-1 text-emerald-500 hover:text-emerald-400 transition-colors"
+                              title="Restore User"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => { setPermanentDeletingUserId(user.id); setIsPermanentDeleteModalOpen(true); }}
+                              className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                              title="Delete Permanently"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => { setEditingUser(user); setIsEditModalOpen(true); }}
+                              className="p-1 text-[#94a3b8] hover:text-white transition-colors"
+                              title="Edit User"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => { setDeletingUserId(user.id); setIsDeleteModalOpen(true); }}
+                              className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -733,9 +844,15 @@ const AdminPanel = () => {
                   required
                   placeholder="Enter email"
                   value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  onChange={(e) => { setAddError(''); setNewUser({ ...newUser, email: e.target.value }); }}
                   className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
+                {addError && (
+                  <p className="mt-1 text-xs text-red-400 font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    {addError}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -829,9 +946,15 @@ const AdminPanel = () => {
                   type="email"
                   required
                   value={editingUser.email}
-                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  onChange={(e) => { setEditError(''); setEditingUser({ ...editingUser, email: e.target.value }); }}
                   className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
+                {editError && (
+                  <p className="mt-1 text-xs text-red-400 font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    {editError}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -903,7 +1026,7 @@ const AdminPanel = () => {
               <h3 className="font-bold text-lg text-white">Delete User</h3>
             </div>
             <p className="text-sm text-slate-300">
-              Are you sure you want to delete this user? This action is permanent and cannot be undone.
+              Are you sure you want to delete this user? They will be moved to the Trash Bin.
             </p>
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -917,6 +1040,35 @@ const AdminPanel = () => {
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Permanent Delete Confirmation Dialog */}
+      {isPermanentDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <AlertTriangle className="w-6 h-6 flex-shrink-0 animate-bounce" />
+              <h3 className="font-bold text-lg text-white">Delete Permanently</h3>
+            </div>
+            <p className="text-sm text-slate-300 font-medium">
+              Are you sure you want to permanently delete this account? This action is permanent and cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setPermanentDeletingUserId(null); setIsPermanentDeleteModalOpen(false); }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePermanentDeleteUser}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-red-900/30"
+              >
+                Permanently Delete
               </button>
             </div>
           </div>
