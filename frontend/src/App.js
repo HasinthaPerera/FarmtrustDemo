@@ -22,8 +22,8 @@ function AnimatedRoutes() {
         {/* Canonical auth entry point — covers login + register */}
         <Route path="/auth" element={<Auth />} />
         {/* Legacy redirects — keep old URLs working */}
-        <Route path="/login"    element={<Navigate to="/auth" replace />} />
-        <Route path="/register" element={<Navigate to="/auth" replace />} />
+        <Route path="/login"    element={<Navigate to="/auth?mode=login" replace />} />
+        <Route path="/register" element={<Navigate to="/auth?mode=register" replace />} />
 
         {/* ── Protected: Farmers & Admins only ── */}
         <Route

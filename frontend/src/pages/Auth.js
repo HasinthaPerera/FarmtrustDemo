@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client, { setAuthToken } from '../api/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -87,9 +87,21 @@ const AuthSelect = ({ label, name, value, onChange, options }) => (
 const Auth = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const mode = searchParams.get('mode');
 
   // ── UI state ──
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(() => mode !== 'register');
+
+  useEffect(() => {
+    if (mode === 'register') {
+      setIsLogin(false);
+    } else {
+      setIsLogin(true);
+    }
+  }, [mode]);
 
   // ── Login state ──
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -720,10 +732,10 @@ const Auth = () => {
                   id="auth-toggle-pill"
                   className="flex items-center bg-slate-800/80 backdrop-blur-sm rounded-full p-1 border border-slate-700/60 shadow-xl"
                 >
-                  {/* Sign Up pill: active when isLogin=false → setIsLogin(false) */}
+                  {/* Sign Up pill: active when isLogin=false */}
                   <button
                     id="toggle-signup-btn"
-                    onClick={() => setIsLogin(false)}
+                    onClick={() => navigate('/auth?mode=register', { replace: true })}
                     className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300
                       ${!isLogin
                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
@@ -732,10 +744,10 @@ const Auth = () => {
                   >
                     Sign Up
                   </button>
-                  {/* Log In pill: active when isLogin=true → setIsLogin(true) */}
+                  {/* Log In pill: active when isLogin=true */}
                   <button
                     id="toggle-login-btn"
-                    onClick={() => setIsLogin(true)}
+                    onClick={() => navigate('/auth?mode=login', { replace: true })}
                     className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300
                       ${isLogin
                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'

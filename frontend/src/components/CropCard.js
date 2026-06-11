@@ -1,20 +1,20 @@
 import React from 'react';
 
-const CROP_IMAGE_MAP = {
-  'beans': '/images/crops/beans.jpg',
-  'brinjal': '/images/crops/brinjal.jpg',
-  'cabbage': '/images/crops/cabbage.jpg',
-  'carrot': '/images/crops/carrot.jpg',
-  'green chilli': '/images/crops/green_chilli.jpg',
-  'lime': '/images/crops/lime.jpg',
-  'pumpkin': '/images/crops/pumpkin.jpg',
-  'snake gourd': '/images/crops/snake_gourd.jpg',
-  'tomato': '/images/crops/tomato.jpg',
+const cropImages = {
+  'beans': '/images/beans.jpg',
+  'brinjal': '/images/brinjal.jpg',
+  'cabbage': '/images/cabbage.jpg',
+  'carrot': '/images/carrot.webp',
+  'green chilli': '/images/green_chilli.webp',
+  'lime': '/images/lime.jpg',
+  'pumpkin': '/images/pumpkin.jpg',
+  'snake gourd': '/images/snake_gourd.webp',
+  'tomato': '/images/tomato.jpg',
 };
 
 const getCropImage = (name = '') => {
   const key = name.toLowerCase().trim();
-  return CROP_IMAGE_MAP[key] || '/images/crops/default.jpg';
+  return cropImages[key] || '/images/crops/default.jpg';
 };
 
 const CropCard = ({ crop, role = 'buyer', onAddToCart, onBuyNow }) => {
@@ -48,7 +48,7 @@ const CropCard = ({ crop, role = 'buyer', onAddToCart, onBuyNow }) => {
       {/* ── Image Placement (Top Cover) ── */}
       <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-700 select-none">
         <img
-          src={crop.image || getCropImage(crop.name)}
+          src={getCropImage(crop.name)}
           alt={crop.name}
           onError={(e) => {
             e.target.onerror = null;
@@ -91,12 +91,12 @@ const CropCard = ({ crop, role = 'buyer', onAddToCart, onBuyNow }) => {
           {/* Pricing & Status Row */}
           <div className="flex items-baseline gap-2 pt-1">
             <span className="text-lg font-extrabold text-primary-700 dark:text-primary-400">
-              ${offerPrice.toFixed(2)}
+              Rs. {offerPrice.toFixed(2)}
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">/kg</span>
             </span>
             {originalPrice && (
               <span className="text-xs text-slate-400 line-through">
-                ${originalPrice}
+                Rs. {originalPrice}
               </span>
             )}
             

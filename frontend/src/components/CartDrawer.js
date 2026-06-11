@@ -78,7 +78,7 @@ const CartDrawer = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Total Price:</span>
-                    <span className="font-bold text-primary-600 dark:text-primary-400">${Number(order.totalAmount).toFixed(2)}</span>
+                    <span className="font-bold text-primary-600 dark:text-primary-400">Rs. {Number(order.totalAmount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Method:</span>

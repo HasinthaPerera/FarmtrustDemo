@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { ShoppingCart, LogOut } from 'lucide-react';
 import CartDrawer from './CartDrawer';
 import ThemeToggle from './ThemeToggle';
@@ -11,19 +12,19 @@ import ThemeToggle from './ThemeToggle';
 // The guest key ('') covers the unauthenticated state.
 // ---------------------------------------------------------------------------
 const NAV_LINKS_BY_ROLE = {
-  '':       [
-    { href: '/',           label: 'Home'        },
-    { href: '/buyer',      label: 'Marketplace' },
+  '': [
+    { href: '/', label: 'Home' },
+    { href: '/buyer', label: 'Marketplace' },
   ],
-  buyer:    [
-    { href: '/buyer',          label: 'Marketplace' },
+  buyer: [
+    { href: '/buyer', label: 'Marketplace' },
     { href: '/ai-predictions', label: 'Future Prices' },
   ],
-  farmer:   [
-    { href: '/farmer',     label: 'My Products'  },
+  farmer: [
+    { href: '/farmer', label: 'My Products' },
     { href: '/ai-predictions', label: 'AI Price Page' },
   ],
-  admin:    [],
+  admin: [],
 };
 
 const AUTH_HREF = '/auth';
@@ -32,8 +33,8 @@ const AUTH_HREF = '/auth';
 // Navbar component
 // ---------------------------------------------------------------------------
 const Navbar = () => {
-  const location  = useLocation();
-  const navigate  = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [navOpen, setNavOpen] = useState(false);
 
   // ---------------------------------------------------------------------------
@@ -42,7 +43,7 @@ const Navbar = () => {
   // ---------------------------------------------------------------------------
   const [isScrolled, setIsScrolled] = useState(false);
   const isHome = location.pathname === '/';
-  
+
   // For any page other than home, the navbar is permanently "solid" (scrolled state)
   const effectiveIsScrolled = isHome ? isScrolled : true;
 
@@ -56,11 +57,12 @@ const Navbar = () => {
 
   // Consume AuthContext — zero prop-drilling required
   const { user, logout } = useAuth();
+  const { cartItems } = useCart();
 
   // Derive the correct link list for the current auth state / role
-  const role        = user?.role ?? '';
+  const role = user?.role ?? '';
   const activeLinks = NAV_LINKS_BY_ROLE[role] ?? NAV_LINKS_BY_ROLE[''];
-  const isGuest     = !user;
+  const isGuest = !user;
 
   // Logout handler: clear context + localStorage, then redirect home
   const handleLogout = () => {
@@ -78,15 +80,14 @@ const Navbar = () => {
     <Link
       key={href + label}
       to={href}
-      className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
-        location.pathname === href
+      className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${location.pathname === href
           ? effectiveIsScrolled
             ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400'
             : 'bg-white/15 text-white'
           : effectiveIsScrolled
             ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
             : 'text-white/90 hover:text-white hover:bg-white/10'
-      }`}
+        }`}
     >
       {label}
     </Link>
@@ -98,11 +99,10 @@ const Navbar = () => {
       key={href + label}
       to={href}
       onClick={() => setNavOpen(false)}
-      className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${
-        location.pathname === href
+      className={`block px-3 py-2 rounded-lg text-sm font-semibold transition ${location.pathname === href
           ? 'bg-primary-100 text-primary-800'
           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-      }`}
+        }`}
     >
       {label}
     </Link>
@@ -183,10 +183,15 @@ const Navbar = () => {
               {role === 'buyer' && (
                 <button
                   onClick={() => window.dispatchEvent(new Event('openCart'))}
-                  className={`p-2 transition-all duration-300 flex items-center justify-center rounded-full ${effectiveIsScrolled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-white/90 hover:text-white hover:bg-white/15'}`}
+                  className={`relative p-2 transition-all duration-300 flex items-center justify-center rounded-full ${effectiveIsScrolled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800' : 'text-white/90 hover:text-white hover:bg-white/15'}`}
                   aria-label="Open Cart"
                 >
                   <ShoppingCart size={20} />
+                  {cartItems.length > 0 && (
+                    <span className="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-950">
+                      {cartItems.length}
+                    </span>
+                  )}
                 </button>
               )}
               <button
@@ -251,10 +256,17 @@ const Navbar = () => {
                       setNavOpen(false);
                       window.dispatchEvent(new Event('openCart'));
                     }}
-                    className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                   >
-                    <ShoppingCart size={18} />
-                    View Cart / Orders
+                    <div className="flex items-center gap-3">
+                      <ShoppingCart size={18} />
+                      View Cart / Orders
+                    </div>
+                    {cartItems.length > 0 && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                        {cartItems.length}
+                      </span>
+                    )}
                   </button>
                 )}
                 <button

@@ -16,6 +16,12 @@ const BuyerDashboard = () => {
   const [quantity, setQuantity] = useState(1);
   const [orderIntent, setOrderIntent] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  
+  // Cart Quantity Modal States
+  const [cartModalOpen, setCartModalOpen] = useState(false);
+  const [cartSelectedCrop, setCartSelectedCrop] = useState(null);
+  const [cartQuantity, setCartQuantity] = useState(1);
+  const [cartError, setCartError] = useState('');
 
   const handleAuthFailure = (msg) => {
     if (msg === 'Token is not valid' || msg === 'No token, authorization denied') {
@@ -75,6 +81,35 @@ const BuyerDashboard = () => {
     setOrderIntent(null);
     setPaymentLoading(false);
     setError('');
+  };
+
+  const openCartQuantityWindow = (crop) => {
+    setCartSelectedCrop(crop);
+    setCartQuantity(1);
+    setCartError('');
+    setCartModalOpen(true);
+  };
+
+  const closeCartQuantityWindow = () => {
+    setCartModalOpen(false);
+    setCartSelectedCrop(null);
+    setCartQuantity(1);
+    setCartError('');
+  };
+
+  const handleConfirmAddToCart = () => {
+    if (!cartSelectedCrop) return;
+    const qty = Number(cartQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      setCartError('Please enter a valid quantity.');
+      return;
+    }
+    if (qty > cartSelectedCrop.quantity) {
+      setCartError(`Only ${cartSelectedCrop.quantity} kg available in stock.`);
+      return;
+    }
+    addToCart(cartSelectedCrop, qty);
+    closeCartQuantityWindow();
   };
 
   const createIntent = async () => {
@@ -192,7 +227,7 @@ const BuyerDashboard = () => {
                 key={crop.id} 
                 crop={crop} 
                 role="buyer" 
-                onAddToCart={addToCart} 
+                onAddToCart={openCartQuantityWindow} 
                 onBuyNow={openPaymentWindow} 
               />
             ))
@@ -225,7 +260,7 @@ const BuyerDashboard = () => {
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
                 <p className="font-semibold text-slate-900 dark:text-slate-100">Crop: {selectedCrop.name}</p>
-                <p className="text-slate-600 dark:text-slate-300">Unit price: ${Number(selectedCrop.price).toFixed(2)} / kg</p>
+                <p className="text-slate-600 dark:text-slate-300">Unit price: Rs. {Number(selectedCrop.price).toFixed(2)} / kg</p>
               </div>
 
               <div>
@@ -244,7 +279,7 @@ const BuyerDashboard = () => {
 
               <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800">
                 <p className="text-slate-700 dark:text-slate-300">Order total</p>
-                <p className="text-2xl font-bold text-primary-700">${totalPreview}</p>
+                <p className="text-2xl font-bold text-primary-700">Rs. {totalPreview}</p>
               </div>
 
               {!orderIntent ? (
@@ -280,6 +315,61 @@ const BuyerDashboard = () => {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cartModalOpen && cartSelectedCrop && (
+        <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:border dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Add to Cart</h3>
+              <button type="button" onClick={closeCartQuantityWindow} className="btn-secondary px-3 py-2">
+                Close
+              </button>
+            </div>
+
+            {cartError && (
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+                {cartError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                <p className="font-semibold text-slate-900 dark:text-slate-100">Crop: {cartSelectedCrop.name}</p>
+                <p className="text-slate-600 dark:text-slate-300">Unit price: Rs. {Number(cartSelectedCrop.price).toFixed(2)} / kg</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Available Stock: {cartSelectedCrop.quantity} kg</p>
+              </div>
+
+              <div>
+                <label className="form-label dark:text-slate-300">Quantity (kg)</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max={cartSelectedCrop.quantity} 
+                  value={cartQuantity} 
+                  onChange={(e) => {
+                    setCartQuantity(e.target.value);
+                    setCartError('');
+                  }} 
+                  className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800">
+                <p className="text-slate-700 dark:text-slate-300">Total Price</p>
+                <p className="text-2xl font-bold text-primary-700">Rs. {(Number(cartSelectedCrop.price) * Number(cartQuantity || 0)).toFixed(2)}</p>
+              </div>
+
+              <button
+                type="button"
+                className="btn-primary w-full"
+                onClick={handleConfirmAddToCart}
+              >
+                Confirm Add to Cart
+              </button>
             </div>
           </div>
         </div>
