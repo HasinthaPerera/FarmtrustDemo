@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Wheat, Banknote, ShieldCheck, LayoutDashboard, Settings, RefreshCw,
-  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw
+  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw, Check
 } from 'lucide-react';
 
 const RECENT_ACTIVITY = [
@@ -117,14 +117,71 @@ const AdminPanel = () => {
   const [cropStatusFilter, setCropStatusFilter] = useState('All Status');
   const [cropCategoryFilter, setCropCategoryFilter] = useState('All Categories');
 
+  // Crop status dropdown state
+  const [openCropDropdownId, setOpenCropDropdownId] = useState(null);
+  
+  // Filter dropdown states
+  const [openUserFilterDropdown, setOpenUserFilterDropdown] = useState(null);
+  const [openCropFilterDropdown, setOpenCropFilterDropdown] = useState(null);
+
+  const handleCropStatusChange = (cropId, newStatus) => {
+    setCrops(crops.map(c => c.id === cropId ? { ...c, status: newStatus } : c));
+    setOpenCropDropdownId(null);
+  };
+
   // Modals management states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddCropModalOpen, setIsAddCropModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteCropModalOpen, setIsDeleteCropModalOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'buyer', status: 'active', district: 'Colombo' });
+  const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
   const [editingUser, setEditingUser] = useState(null);
+  const [editingCrop, setEditingCrop] = useState(null);
+  const [isEditCropModalOpen, setIsEditCropModalOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState(null);
+  const [deletingCropId, setDeletingCropId] = useState(null);
+
+  const handleEditCrop = (e) => {
+    e.preventDefault();
+    if (editingCrop) {
+      setCrops(crops.map(c => c.id === editingCrop.id ? { ...editingCrop } : c));
+      setIsEditCropModalOpen(false);
+      setEditingCrop(null);
+    }
+  };
+
+  const handleDeleteCrop = () => {
+    if (deletingCropId) {
+      setCrops(crops.map(c => c.id === deletingCropId ? { ...c, status: 'Trash' } : c));
+      setIsDeleteCropModalOpen(false);
+      setDeletingCropId(null);
+    }
+  };
+
+  const handleAddCrop = (e) => {
+    e.preventDefault();
+    const newId = `CRP-00${crops.length + 1}`.slice(-3);
+    const initials = newCrop.farmerName ? newCrop.farmerName.substring(0, 2).toUpperCase() : 'NA';
+    setCrops([{
+      id: `CRP-${newId}`,
+      name: newCrop.name,
+      category: newCrop.category,
+      price: newCrop.price,
+      qty: newCrop.qty,
+      farmerName: newCrop.farmerName,
+      location: newCrop.location,
+      listed: newCrop.listed,
+      status: 'Active',
+      isOrganic: false,
+      farmerInitials: initials,
+      farmerColor: 'bg-emerald-900 text-emerald-200'
+    }, ...crops]);
+    setIsAddCropModalOpen(false);
+    setNewCrop({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
+  };
 
   // Trash bin states
   const [showTrash, setShowTrash] = useState(false);
@@ -372,36 +429,63 @@ const AdminPanel = () => {
           <div className="flex w-full md:w-auto items-center gap-3">
             {/* Roles Filter Dropdown */}
             <div className="relative w-full md:w-40">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+              <button
+                onClick={() => setOpenUserFilterDropdown(openUserFilterDropdown === 'role' ? null : 'role')}
+                className="flex items-center justify-between w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer transition-colors"
               >
-                <option value="All Roles">All Roles</option>
-                <option value="buyer">Buyer</option>
-                <option value="farmer">Farmer</option>
-                <option value="admin">Admin</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <span className="capitalize">{roleFilter === 'All Roles' ? 'All Roles' : roleFilter}</span>
                 <ChevronDown className="h-4 w-4 text-[#94a3b8]" />
-              </div>
+              </button>
+              {openUserFilterDropdown === 'role' && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenUserFilterDropdown(null)} />
+                  <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-1.5 flex flex-col gap-0.5">
+                      {['All Roles', 'buyer', 'farmer', 'admin'].map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => { setRoleFilter(opt); setOpenUserFilterDropdown(null); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors capitalize"
+                        >
+                          <span className="font-medium">{opt}</span>
+                          {roleFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Status Filter Dropdown - Hidden in Trash view */}
             {!showTrash && (
               <div className="relative w-full md:w-40">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                <button
+                  onClick={() => setOpenUserFilterDropdown(openUserFilterDropdown === 'status' ? null : 'status')}
+                  className="flex items-center justify-between w-full px-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer transition-colors"
                 >
-                  <option value="All Statuses">All Statuses</option>
-                  <option value="Active Only">Active Only</option>
-                  <option value="Inactive Only">Inactive Only</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span>{statusFilter}</span>
                   <ChevronDown className="h-4 w-4 text-[#94a3b8]" />
-                </div>
+                </button>
+                {openUserFilterDropdown === 'status' && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpenUserFilterDropdown(null)} />
+                    <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
+                      <div className="p-1.5 flex flex-col gap-0.5">
+                        {['All Statuses', 'Active Only', 'Inactive Only'].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => { setStatusFilter(opt); setOpenUserFilterDropdown(null); }}
+                            className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
+                          >
+                            <span className="font-medium">{opt}</span>
+                            {statusFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -559,57 +643,99 @@ const AdminPanel = () => {
   };
 
   // 3. Crops View (Styled with dark theme)
-  const CropsView = () => (
-    <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 text-slate-300 transition-colors shadow-lg animate-pageSlideFade">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-white mb-1">Crop Listings Management</h3>
-        <p className="text-[#94a3b8] text-sm">Review and manage all crop listings on the platform.</p>
-      </div>
-
+  const cropsView = (
+    <div className="space-y-6 animate-pageSlideFade">
       {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row flex-1 gap-2">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-[#94a3b8]" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by crop, farmer, location..."
-              value={cropSearchQuery}
-              onChange={(e) => setCropSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-emerald-500 transition-colors"
-            />
+      <div className="bg-[#1e293b]/90 border border-slate-700/50 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+        <div className="relative w-full md:flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-[#94a3b8]" />
           </div>
+          <input
+            type="text"
+            placeholder="Search by crop, farmer, location..."
+            value={cropSearchQuery}
+            onChange={(e) => setCropSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-4 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-emerald-500 transition-colors"
+          />
         </div>
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
-          <div className="relative">
-            <select
-              value={cropStatusFilter}
-              onChange={(e) => setCropStatusFilter(e.target.value)}
-              className="flex items-center gap-2 bg-[#0f172a] border border-slate-700/70 text-white px-4 py-2 rounded-lg text-sm appearance-none focus:outline-none focus:border-emerald-500 cursor-pointer pr-8"
+        <div className="flex w-full md:w-auto items-center gap-3">
+          <div className="relative w-full sm:w-48">
+            <button
+              onClick={() => setOpenCropFilterDropdown(openCropFilterDropdown === 'category' ? null : 'category')}
+              className="flex items-center justify-between w-full bg-[#0f172a] border border-slate-700/70 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-emerald-500 cursor-pointer transition-colors"
             >
-              <option value="All Status">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#94a3b8] absolute right-3 top-3 pointer-events-none" />
+              <span>{cropCategoryFilter}</span>
+              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
+            </button>
+            {openCropFilterDropdown === 'category' && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setOpenCropFilterDropdown(null)} />
+                <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-1.5 flex flex-col gap-0.5">
+                    {['All Categories', 'Grain', 'Vegetable', 'Fruit', 'Spice'].map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => { setCropCategoryFilter(opt); setOpenCropFilterDropdown(null); }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
+                      >
+                        <span className="font-medium">{opt}</span>
+                        {cropCategoryFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-          <div className="relative">
-            <select
-              value={cropCategoryFilter}
-              onChange={(e) => setCropCategoryFilter(e.target.value)}
-              className="flex items-center gap-2 bg-[#0f172a] border border-slate-700/70 text-white px-4 py-2 rounded-lg text-sm appearance-none focus:outline-none focus:border-emerald-500 cursor-pointer pr-8"
+          <div className="relative w-full sm:w-40">
+            <button
+              onClick={() => setOpenCropFilterDropdown(openCropFilterDropdown === 'status' ? null : 'status')}
+              className="flex items-center justify-between w-full bg-[#0f172a] border border-slate-700/70 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-emerald-500 cursor-pointer transition-colors"
             >
-              <option value="All Categories">All Categories</option>
-              <option value="Grain">Grain</option>
-              <option value="Vegetable">Vegetable</option>
-              <option value="Fruit">Fruit</option>
-              <option value="Spice">Spice</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#94a3b8] absolute right-3 top-3 pointer-events-none" />
+              <span>{cropStatusFilter}</span>
+              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
+            </button>
+            {openCropFilterDropdown === 'status' && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setOpenCropFilterDropdown(null)} />
+                <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-1.5 flex flex-col gap-0.5">
+                    {['All Status', 'Active', 'Pending', 'Inactive', 'Trash'].map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => { setCropStatusFilter(opt); setOpenCropFilterDropdown(null); }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
+                      >
+                        <span className="font-medium">{opt}</span>
+                        {cropStatusFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Trash Bin Toggle Button */}
+          <button
+            onClick={() => setCropStatusFilter(cropStatusFilter === 'Trash' ? 'All Status' : 'Trash')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all border whitespace-nowrap ${
+              cropStatusFilter === 'Trash' 
+                ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30' 
+                : 'bg-[#1e293b] border-slate-700 text-[#94a3b8] hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Trash2 className="w-4 h-4" /> Trash ({crops.filter(c => c.status === 'Trash').length})
+          </button>
+
+          {/* Add Crop Button */}
+          <button 
+            onClick={() => setIsAddCropModalOpen(true)}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/20 whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" /> Add Listing
+          </button>
         </div>
       </div>
 
@@ -626,32 +752,101 @@ const AdminPanel = () => {
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Farmer</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Location</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Listed</th>
+              <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {crops
               .filter(c => {
                 const matchesSearch = c.name.toLowerCase().includes(cropSearchQuery.toLowerCase()) || c.farmerName.toLowerCase().includes(cropSearchQuery.toLowerCase()) || c.location.toLowerCase().includes(cropSearchQuery.toLowerCase());
-                const matchesStatus = cropStatusFilter === 'All Status' || c.status === cropStatusFilter;
+                const matchesStatus = cropStatusFilter === 'Trash' 
+                  ? c.status === 'Trash' 
+                  : (cropStatusFilter === 'All Status' ? c.status !== 'Trash' : c.status === cropStatusFilter);
                 const matchesCategory = cropCategoryFilter === 'All Categories' || c.category === cropCategoryFilter;
                 return matchesSearch && matchesStatus && matchesCategory;
               })
               .map((crop) => (
                 <tr key={crop.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-white">{crop.name}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#0f172a] border border-slate-700 flex items-center justify-center flex-shrink-0">
+                        {crop.category === 'Grain' ? <Wheat className="w-5 h-5 text-amber-500" /> : 
+                         crop.category === 'Vegetable' ? <div className="w-4 h-4 rounded-full bg-emerald-500" /> : 
+                         crop.category === 'Fruit' ? <div className="w-4 h-4 rounded-md bg-orange-400" /> : 
+                         <div className="w-3 h-3 rounded-sm bg-purple-400 rotate-45" />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-white">{crop.name}</span>
+                        <span className="text-xs text-slate-500 mt-0.5">{crop.id}</span>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-[#94a3b8]">{crop.category}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
-                      crop.status === 'Active' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50' : 
-                      crop.status === 'Pending' ? 'bg-amber-950/40 text-amber-500 border border-amber-900/50' : 
-                      'bg-slate-800 text-[#94a3b8] border border-slate-700'
-                    }`}>
-                      {crop.status}
-                    </span>
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenCropDropdownId(openCropDropdownId === crop.id ? null : crop.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                          crop.status === 'Active' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50 hover:bg-emerald-900/40' : 
+                          crop.status === 'Pending' ? 'bg-amber-950/40 text-amber-500 border border-amber-900/50 hover:bg-amber-900/40' : 
+                          crop.status === 'Trash' ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50 hover:bg-rose-900/40' : 
+                          'bg-slate-800/80 text-[#94a3b8] border border-slate-700 hover:bg-slate-700/80'
+                        }`}
+                      >
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          crop.status === 'Active' ? 'bg-emerald-400' : 
+                          crop.status === 'Pending' ? 'bg-amber-500' : 
+                          crop.status === 'Trash' ? 'bg-rose-400' : 
+                          'bg-slate-400'
+                        }`} />
+                        {crop.status}
+                        <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                      </button>
+                      
+                      {openCropDropdownId === crop.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setOpenCropDropdownId(null)} />
+                          <div className="absolute left-0 mt-2 w-48 bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50">
+                            <div className="px-4 py-3 border-b border-slate-700/50">
+                              <span className="text-[10px] font-bold text-[#64748b] tracking-widest uppercase">Change Status</span>
+                            </div>
+                            <div className="p-1.5 flex flex-col gap-0.5">
+                              {['Active', 'Pending', 'Inactive'].map((statusOption) => (
+                                <button
+                                  key={statusOption}
+                                  onClick={() => handleCropStatusChange(crop.id, statusOption)}
+                                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      statusOption === 'Active' ? 'bg-emerald-500' :
+                                      statusOption === 'Pending' ? 'bg-amber-500' :
+                                      statusOption === 'Trash' ? 'bg-rose-500' :
+                                      'bg-slate-500'
+                                    }`} />
+                                    <span className="font-medium">{statusOption}</span>
+                                  </div>
+                                  {crop.status === statusOption && <Check className="w-4 h-4 text-emerald-500" />}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-white font-medium">{crop.price} <span className="text-slate-500 text-xs">/kg</span></td>
-                  <td className="px-6 py-4">{crop.qty}</td>
-                  <td className="px-6 py-4">{crop.farmerName}</td>
+                  <td className="px-6 py-4">
+                    <span className="text-white font-medium">{crop.qty}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${crop.farmerColor || 'bg-slate-800 text-slate-300'}`}>
+                        {crop.farmerInitials || crop.farmerName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <span className="text-slate-300 font-medium">{crop.farmerName}</span>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 text-[#94a3b8]">
                       <MapPin className="w-3.5 h-3.5" />
@@ -659,6 +854,24 @@ const AdminPanel = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-[#94a3b8]">{crop.listed}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-4">
+                      <button 
+                        onClick={() => { setEditingCrop({...crop}); setIsEditCropModalOpen(true); }}
+                        className="p-1 text-slate-500 hover:text-emerald-400 transition-colors"
+                        title="Edit Crop"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => { setDeletingCropId(crop.id); setIsDeleteCropModalOpen(true); }}
+                        className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
+                        title="Delete Crop"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -698,7 +911,7 @@ const AdminPanel = () => {
   const VIEW_MAP = {
     dashboard: <DashboardView />,
     users: <UsersView />,
-    crops: <CropsView />,
+    crops: cropsView,
     settings: <SettingsView />,
   };
 
@@ -1071,6 +1284,277 @@ const AdminPanel = () => {
                 Permanently Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Add Crop Modal */}
+      {isAddCropModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-pageSlideFade">
+            <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-[#182232]">
+              <h3 className="font-bold text-lg text-white">Add New Crop</h3>
+            </div>
+            
+            <form onSubmit={handleAddCrop} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Crop Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Basmati rice"
+                  value={newCrop.name}
+                  onChange={(e) => setNewCrop({ ...newCrop, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Category</label>
+                <select
+                  value={newCrop.category}
+                  onChange={(e) => setNewCrop({ ...newCrop, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="Grain">Grain</option>
+                  <option value="Vegetable">Vegetable</option>
+                  <option value="Fruit">Fruit</option>
+                  <option value="Spice">Spice</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Price</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. $2.45"
+                    value={newCrop.price}
+                    onChange={(e) => setNewCrop({ ...newCrop, price: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Qty (KG)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 52"
+                    value={newCrop.qty}
+                    onChange={(e) => setNewCrop({ ...newCrop, qty: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Farmer</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. R. Premadasa"
+                  value={newCrop.farmerName}
+                  onChange={(e) => setNewCrop({ ...newCrop, farmerName: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dambulla"
+                    value={newCrop.location}
+                    onChange={(e) => setNewCrop({ ...newCrop, location: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Listed Date</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Jun 4"
+                    value={newCrop.listed}
+                    onChange={(e) => setNewCrop({ ...newCrop, listed: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCropModalOpen(false)}
+                  className="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-semibold transition-colors text-white shadow-lg shadow-emerald-500/20"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Delete Crop Modal */}
+      {isDeleteCropModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-8 animate-pageSlideFade space-y-4">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-lg text-white">
+                Delete {crops.find(c => c.id === deletingCropId)?.name} permanently?
+              </h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                This crop and all its data will be removed forever and cannot be recovered.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 pt-6">
+              <button
+                onClick={() => { setDeletingCropId(null); setIsDeleteCropModalOpen(false); }}
+                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-slate-800 rounded-xl text-sm font-semibold transition-colors w-full"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCrop}
+                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 rounded-xl text-sm font-semibold transition-colors w-full"
+              >
+                Delete forever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Edit Crop Modal */}
+      {isEditCropModalOpen && editingCrop && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-pageSlideFade">
+            <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-[#182232]">
+              <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-emerald-400" /> Edit Crop
+              </h3>
+              <button onClick={() => setIsEditCropModalOpen(false)} className="p-1 hover:bg-slate-700 rounded transition-colors">
+                <X className="w-5 h-5 text-[#94a3b8]" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditCrop} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Crop Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingCrop.name}
+                  onChange={(e) => setEditingCrop({ ...editingCrop, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Category</label>
+                <select
+                  value={editingCrop.category}
+                  onChange={(e) => setEditingCrop({ ...editingCrop, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="Grain">Grain</option>
+                  <option value="Vegetable">Vegetable</option>
+                  <option value="Fruit">Fruit</option>
+                  <option value="Spice">Spice</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Price</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCrop.price}
+                    onChange={(e) => setEditingCrop({ ...editingCrop, price: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Qty (KG)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCrop.qty}
+                    onChange={(e) => setEditingCrop({ ...editingCrop, qty: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Farmer</label>
+                <input
+                  type="text"
+                  required
+                  value={editingCrop.farmerName}
+                  onChange={(e) => setEditingCrop({ ...editingCrop, farmerName: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCrop.location}
+                    onChange={(e) => setEditingCrop({ ...editingCrop, location: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Listed Date</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCrop.listed}
+                    onChange={(e) => setEditingCrop({ ...editingCrop, listed: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCropModalOpen(false)}
+                  className="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-semibold transition-colors text-white shadow-lg shadow-emerald-500/20"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
