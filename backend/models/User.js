@@ -42,6 +42,10 @@ const User = (sequelize) => {
         'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
       ),
       allowNull: true
+    },
+    status: {
+      type: DataTypes.ENUM('active', 'inactive'),
+      defaultValue: 'active'
     }
   }, {
     timestamps: true,
