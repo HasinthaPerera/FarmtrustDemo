@@ -7,10 +7,22 @@ const router = express.Router();
 
 // ── Admin-role guard ──────────────────────────────────────────────────────────
 // Sits after authMiddleware; only the hardcoded admin (id = 'admin_1') or any
-// future DB user with role = 'admin' may access these routes.
-const adminOnly = (req, res, next) => {
+// DB user with role = 'admin' may access these routes.
+const adminOnly = async (req, res, next) => {
   // req.user is set by the JWT middleware as { id }
-  if (req.user && req.user.id === 'admin_1') return next();  // hardcoded admin
+  if (!req.user) return res.status(403).json({ msg: 'Admin access required' });
+
+  // Allow the hardcoded master admin (no DB lookup needed)
+  if (req.user.id === 'admin_1') return next();
+
+  // Allow any DB user whose role is 'admin'
+  try {
+    const user = await User.findByPk(req.user.id, { attributes: ['id', 'role', 'status'] });
+    if (user && user.role === 'admin' && user.status === 'active') return next();
+  } catch (err) {
+    console.error('[adminOnly] Error checking DB role:', err);
+  }
+
   return res.status(403).json({ msg: 'Admin access required' });
 };
 
@@ -69,6 +81,7 @@ router.get('/metrics', authMiddleware, adminOnly, async (req, res) => {
 router.get('/users', authMiddleware, adminOnly, async (req, res) => {
   try {
     const users = await User.findAll({
+      attributes: { exclude: ['password', 'googleId'] },
       where: { status: 'active' },
       order: [['createdAt', 'DESC']]
     });
@@ -83,6 +96,7 @@ router.get('/users', authMiddleware, adminOnly, async (req, res) => {
 router.get('/users/trash', authMiddleware, adminOnly, async (req, res) => {
   try {
     const trashed = await User.findAll({
+      attributes: { exclude: ['password', 'googleId'] },
       where: { status: 'inactive' },
       order: [['updatedAt', 'DESC']]
     });
@@ -114,7 +128,12 @@ router.post('/users', authMiddleware, adminOnly, async (req, res) => {
       status: 'active'
     });
 
-    return res.json(user);
+    // Return safe user object (no password/googleId)
+    return res.json({
+      id: user.id, name: user.name, email: user.email,
+      role: user.role, district: user.district, status: user.status,
+      createdAt: user.createdAt, updatedAt: user.updatedAt
+    });
   } catch (err) {
     console.error('[POST /api/admin/users] Error:', err);
     return res.status(500).json({ msg: 'Server error creating user' });
@@ -144,7 +163,13 @@ router.put('/users/:id', authMiddleware, adminOnly, async (req, res) => {
     user.status = status || user.status;
 
     await user.save();
-    return res.json(user);
+
+    // Return safe user object (no password/googleId)
+    return res.json({
+      id: user.id, name: user.name, email: user.email,
+      role: user.role, district: user.district, status: user.status,
+      createdAt: user.createdAt, updatedAt: user.updatedAt
+    });
   } catch (err) {
     console.error('[PUT /api/admin/users/:id] Error:', err);
     return res.status(500).json({ msg: 'Server error updating user' });

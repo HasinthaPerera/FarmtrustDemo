@@ -39,6 +39,7 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [lastRefreshed, setLastRefreshed] = useState(new Date().toLocaleTimeString());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
   // Users local state initialized to match the screenshot
   const [users, setUsers] = useState([]);
@@ -74,15 +75,18 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const fetchAdminData = async () => {
+      setIsLoadingUsers(true);
       try {
         const token = localStorage.getItem('token');
         if (token) {
           client.defaults.headers.common['x-auth-token'] = token;
         }
         
-        // Fetch active and trashed users
-        const activeRes = await client.get('/admin/users');
-        const trashRes = await client.get('/admin/users/trash');
+        // Fetch active and trashed users in parallel
+        const [activeRes, trashRes] = await Promise.all([
+          client.get('/admin/users'),
+          client.get('/admin/users/trash'),
+        ]);
         setUsers(activeRes.data);
         setDeletedUsers(trashRes.data);
         
@@ -95,19 +99,21 @@ const AdminPanel = () => {
         } catch (metricsErr) {
           console.error('Error fetching admin metrics:', metricsErr);
           // Fallback to local counts
-          setMetrics({
+          setMetrics(prev => ({
+            ...prev,
             totalUsers: activeRes.data.length.toString(),
-            activeCrops: crops.filter(c => c.status === 'Active').length.toString(),
             transactions: '$14,920',
             platformHealth: '99.9%'
-          });
+          }));
         }
       } catch (err) {
         console.error('Error loading admin panel data:', err);
+      } finally {
+        setIsLoadingUsers(false);
       }
     };
     fetchAdminData();
-  }, [lastRefreshed, crops]);
+  }, [lastRefreshed]);
 
   // Search & Filtering states
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,7 +143,7 @@ const AdminPanel = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteCropModalOpen, setIsDeleteCropModalOpen] = useState(false);
 
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'buyer', status: 'active', district: 'Colombo' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'buyer', status: 'active', district: 'Colombo' });
   const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
   const [editingUser, setEditingUser] = useState(null);
   const [editingCrop, setEditingCrop] = useState(null);
@@ -205,15 +211,15 @@ const AdminPanel = () => {
   // User Action Handlers
   const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!newUser.name || !newUser.email) return;
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      setAddError('Name, email and password are required.');
+      return;
+    }
 
     try {
-      const res = await client.post('/admin/users', {
-        ...newUser,
-        password: 'password123'
-      });
+      const res = await client.post('/admin/users', newUser);
       setUsers([res.data, ...users]);
-      setNewUser({ name: '', email: '', role: 'buyer', status: 'active', district: 'Colombo' });
+      setNewUser({ name: '', email: '', password: '', role: 'buyer', status: 'active', district: 'Colombo' });
       setAddError('');
       setIsAddModalOpen(false);
     } catch (err) {
@@ -529,7 +535,24 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {filteredUsers.length === 0 ? (
+                {isLoadingUsers ? (
+                  // Loading skeleton rows
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-slate-700/60" />
+                          <div className="h-3 w-28 bg-slate-700/60 rounded-full" />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4"><div className="h-3 w-40 bg-slate-700/60 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-5 w-14 bg-slate-700/60 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-5 w-14 bg-slate-700/60 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-3 w-24 bg-slate-700/60 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-3 w-12 bg-slate-700/60 rounded-full" /></td>
+                    </tr>
+                  ))
+                ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-8 text-center text-[#64748b]">
                       {showTrash ? "No deleted users found in the trash." : "No users found matching filters."}
@@ -1053,6 +1076,18 @@ const AdminPanel = () => {
                   onChange={(e) => { setAddError(''); setNewUser({ ...newUser, email: e.target.value }); }}
                   className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Set initial password"
+                  value={newUser.password}
+                  onChange={(e) => { setAddError(''); setNewUser({ ...newUser, password: e.target.value }); }}
+                  className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                />
                 {addError && (
                   <p className="mt-1 text-xs text-red-400 font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1104,7 +1139,7 @@ const AdminPanel = () => {
               <div className="pt-4 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => { setIsAddModalOpen(false); setAddError(''); }}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
                 >
                   Cancel
