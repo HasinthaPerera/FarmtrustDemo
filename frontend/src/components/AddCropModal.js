@@ -17,15 +17,15 @@ const SL_DISTRICTS = [
 ];
 
 const CROP_IMAGES = {
-  Beans: '/images/crops/beans.jpg',
-  Brinjal: '/images/crops/brinjal.jpg',
-  Cabbage: '/images/crops/cabbage.jpg',
-  Carrot: '/images/crops/carrot.jpg',
-  'Green Chilli': '/images/crops/green_chilli.jpg',
-  Lime: '/images/crops/lime.jpg',
-  Pumpkin: '/images/crops/pumpkin.jpg',
-  'Snake gourd': '/images/crops/snake_gourd.jpg',
-  Tomato: '/images/crops/tomato.jpg',
+  Beans: '/images/beans.jpg',
+  Brinjal: '/images/brinjal.jpg',
+  Cabbage: '/images/cabbage.jpg',
+  Carrot: '/images/carrot.webp',
+  'Green Chilli': '/images/green_chilli.webp',
+  Lime: '/images/lime.jpg',
+  Pumpkin: '/images/pumpkin.jpg',
+  'Snake gourd': '/images/snake_gourd.webp',
+  Tomato: '/images/tomato.jpg',
 };
 
 const AddCropModal = ({ isOpen, onClose, onCropAdded }) => {
