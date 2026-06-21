@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Wheat, Banknote, ShieldCheck, LayoutDashboard, Settings, RefreshCw,
-  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw, Check
+  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw, Check,
+  Save, Phone, Mail, Globe, Clock, FileText, Info, MessageCircle
 } from 'lucide-react';
 import client from '../api/client';
 
@@ -914,32 +915,236 @@ const AdminPanel = () => {
   );
 
   // 4. Settings View (Styled with dark theme)
-  const SettingsView = () => (
-    <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-8 text-slate-300 shadow-lg animate-pageSlideFade">
-      <h3 className="text-xl font-bold text-white mb-6">System Settings</h3>
-      <div className="space-y-6 max-w-xl">
-        <div>
-          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Platform Name</label>
-          <input
-            type="text"
-            defaultValue="FarmTrust"
-            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          />
+  const SettingsView = () => {
+    const [contact, setContact] = useState(() => {
+      const saved = localStorage.getItem('siteContactInfo');
+      return saved ? JSON.parse(saved) : {
+        email: 'support@farmtrust.lk',
+        phone: '+94 77 123 4567',
+        whatsapp: '+94 77 123 4567',
+        address: 'No. 45, Galle Road, Colombo 03, Sri Lanka',
+        hours: 'Mon – Fri, 8:00 AM – 5:00 PM'
+      };
+    });
+
+    const handleSaveContact = () => {
+      localStorage.setItem('siteContactInfo', JSON.stringify(contact));
+      alert('Contact info saved successfully!');
+    };
+
+    return (
+      <div className="flex flex-col gap-6 animate-pageSlideFade max-w-7xl mx-auto w-full">
+        {/* System Settings Card */}
+        <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-600/20 flex items-center justify-center shrink-0">
+                <Settings className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">System Settings</h3>
+                <p className="text-sm text-slate-400 mt-0.5">Core platform configuration</p>
+              </div>
+            </div>
+            <button className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all items-center gap-2 text-sm">
+              <Save className="w-4 h-4" />
+              Save Settings
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Platform Name</label>
+              <input
+                type="text"
+                defaultValue="FarmTrust"
+                className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Commission Rate (%)</label>
+              <input
+                type="number"
+                defaultValue="5"
+                className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Currency</label>
+              <div className="relative">
+                <select
+                  defaultValue="LKR"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="LKR">LKR (Rs.)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Time Zone</label>
+              <div className="relative">
+                <select
+                  defaultValue="Asia/Colombo"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Asia/Colombo">Asia/Colombo (GMT+5:30)</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
+                  <option value="UTC">UTC (GMT+0:00)</option>
+                  <option value="America/New_York">America/New_York (GMT-5:00)</option>
+                  <option value="Europe/London">Europe/London (GMT+0:00)</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+          
+          <button className="md:hidden mt-6 w-full flex justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all items-center gap-2 text-sm">
+            <Save className="w-4 h-4" />
+            Save Settings
+          </button>
         </div>
-        <div>
-          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Commission Rate (%)</label>
-          <input
-            type="number"
-            defaultValue="5"
-            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          />
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+          {/* Contact & Support Card */}
+          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-rose-600/20 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-white">Contact & Support</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full">New</span>
+                </div>
+                <p className="text-sm text-slate-400 mt-0.5">Shown to farmers when they need help</p>
+              </div>
+            </div>
+            
+            <div className="space-y-5 mt-6 flex-1">
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Email</label>
+                <input
+                  type="email"
+                  value={contact.email}
+                  onChange={(e) => setContact({...contact, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={contact.phone}
+                    onChange={(e) => setContact({...contact, phone: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    value={contact.whatsapp}
+                    onChange={(e) => setContact({...contact, whatsapp: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Office Address</label>
+                <input
+                  type="text"
+                  value={contact.address}
+                  onChange={(e) => setContact({...contact, address: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Hours</label>
+                <input
+                  type="text"
+                  value={contact.hours}
+                  onChange={(e) => setContact({...contact, hours: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+            <button onClick={handleSaveContact} className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
+              <Save className="w-4 h-4" />
+              Save Contact Info
+            </button>
+          </div>
+
+          {/* Terms & Policies Card */}
+          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center shrink-0">
+                <FileText className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-white">Terms & Policies</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full">New</span>
+                </div>
+                <p className="text-sm text-slate-400 mt-0.5">Legal links shown during signup & footer</p>
+              </div>
+            </div>
+            
+            <div className="space-y-5 mt-6 flex-1">
+              <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3.5 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-blue-100/70 leading-relaxed">These links appear on the signup page and platform footer. Make sure URLs are publicly accessible.</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Terms of Service URL</label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/terms"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Privacy Policy URL</label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/privacy"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">
+                  Refund Policy URL <span className="text-slate-500 font-normal ml-1">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/refunds"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Last Updated Date</label>
+                <input
+                  type="date"
+                  defaultValue="2025-05-01"
+                  className="w-full sm:w-fit px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+            <button className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
+              <Save className="w-4 h-4" />
+              Save Policies
+            </button>
+          </div>
         </div>
-        <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-emerald-900/20 transition-all">
-          Save Settings
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   const VIEW_MAP = {
     dashboard: <DashboardView />,
@@ -983,9 +1188,7 @@ const AdminPanel = () => {
       {/* Left Sidebar */}
       <aside className="w-full md:w-64 bg-[#0f172a] border-b md:border-b-0 md:border-r border-slate-800 flex flex-col flex-shrink-0 shadow-xl">
         <div className="px-6 py-5 border-b border-slate-800 flex justify-between items-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#64748b]">
-            Admin Control Console
-          </p>
+
         </div>
 
         {/* Navigation Tabs */}
