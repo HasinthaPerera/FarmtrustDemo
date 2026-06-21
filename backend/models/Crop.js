@@ -55,6 +55,11 @@ const Crop = (sequelize) => {
         model: 'Users',
         key: 'id'
       }
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      allowNull: false,
+      defaultValue: 'pending'
     }
   }, {
     timestamps: true
