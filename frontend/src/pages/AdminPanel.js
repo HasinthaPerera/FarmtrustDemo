@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, Wheat, Banknote, ShieldCheck, LayoutDashboard, Settings, RefreshCw,
-  Search, ChevronDown, Pencil, Trash2, MapPin, X, UserPlus, AlertTriangle, RotateCcw, Check, ThumbsUp, ThumbsDown
+  Search, ChevronDown, Pencil, Trash2, MapPin, X, UserPlus, AlertTriangle, RotateCcw, Check, ThumbsUp, ThumbsDown,
+  Save, Phone, Mail, Globe, Clock, FileText, Info, MessageCircle
 } from 'lucide-react';
 import client from '../api/client';
 
@@ -902,33 +903,168 @@ const AdminPanel = () => {
     </div>
   );
 
-  // 4. Settings View (Styled with dark theme)
-  const SettingsView = () => (
-    <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-8 text-slate-300 shadow-lg animate-pageSlideFade">
-      <h3 className="text-xl font-bold text-white mb-6">System Settings</h3>
-      <div className="space-y-6 max-w-xl">
-        <div>
-          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Platform Name</label>
-          <input
-            type="text"
-            defaultValue="FarmTrust"
-            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          />
+  // 4. Settings View
+  const SettingsView = () => {
+    const [contact, setContact] = useState({
+      email: 'support@farmtrust.lk',
+      phone: '+94 11 234 5678',
+      whatsapp: '+94 77 123 4567',
+      address: 'No 123, Galle Road, Colombo 03',
+      hours: 'Mon-Fri, 9:00 AM - 5:00 PM'
+    });
+
+    const handleSaveContact = () => {
+      // API call would go here
+      alert('Contact information saved successfully!');
+    };
+
+    return (
+      <div className="space-y-6 animate-pageSlideFade">
+        <div className="bg-[#1e293b]/90 border border-slate-700/50 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-start justify-between">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+              <Settings className="w-7 h-7 text-emerald-400" />
+              Platform Settings
+            </h2>
+            <p className="text-slate-400 mt-2 leading-relaxed text-sm">
+              Manage global platform configurations, support contact information, and legal policies that appear across the site.
+            </p>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Commission Rate (%)</label>
-          <input
-            type="number"
-            defaultValue="5"
-            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Contact Information Card */}
+          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Support Contact Info</h3>
+                <p className="text-sm text-slate-400 mt-0.5">Displayed on Contact and Help pages</p>
+              </div>
+            </div>
+            
+            <div className="space-y-5 mt-6 flex-1">
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Email</label>
+                <input
+                  type="email"
+                  value={contact.email}
+                  onChange={(e) => setContact({...contact, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={contact.phone}
+                    onChange={(e) => setContact({...contact, phone: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    value={contact.whatsapp}
+                    onChange={(e) => setContact({...contact, whatsapp: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Office Address</label>
+                <input
+                  type="text"
+                  value={contact.address}
+                  onChange={(e) => setContact({...contact, address: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Hours</label>
+                <input
+                  type="text"
+                  value={contact.hours}
+                  onChange={(e) => setContact({...contact, hours: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+            <button onClick={handleSaveContact} className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
+              <Save className="w-4 h-4" />
+              Save Contact Info
+            </button>
+          </div>
+
+          {/* Terms & Policies Card */}
+          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center shrink-0">
+                <FileText className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-white">Terms & Policies</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full">New</span>
+                </div>
+                <p className="text-sm text-slate-400 mt-0.5">Legal links shown during signup & footer</p>
+              </div>
+            </div>
+            
+            <div className="space-y-5 mt-6 flex-1">
+              <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3.5 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-blue-100/70 leading-relaxed">These links appear on the signup page and platform footer. Make sure URLs are publicly accessible.</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Terms of Service URL</label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/terms"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Privacy Policy URL</label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/privacy"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">
+                  Refund Policy URL <span className="text-slate-500 font-normal ml-1">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  defaultValue="https://farmtrust.lk/refunds"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Last Updated Date</label>
+                <input
+                  type="date"
+                  defaultValue="2025-05-01"
+                  className="w-full sm:w-fit px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+            <button className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
+              <Save className="w-4 h-4" />
+              Save Policies
+            </button>
+          </div>
         </div>
-        <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-emerald-900/20 transition-all">
-          Save Settings
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -1413,14 +1549,15 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dambulla"
-                    value={newCrop.location}
+                  <select
+                    value={newCrop.location || 'Colombo'}
                     onChange={(e) => setNewCrop({ ...newCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {DISTRICTS.map((d, i) => (
+                      <option key={i} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1459,31 +1596,55 @@ const AdminPanel = () => {
       {/* 6. Delete Crop Modal */}
       {isDeleteCropModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-8 animate-pageSlideFade space-y-4">
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-lg text-white">
-                Delete {crops.find(c => c.id === deletingCropId)?.name} permanently?
-              </h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                This crop and all its data will be removed forever and cannot be recovered.
-              </p>
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+              <h3 className="font-bold text-lg text-white">Delete Crop</h3>
             </div>
-            
-            <div className="grid grid-cols-2 gap-3 pt-6">
+            <p className="text-sm text-slate-300">
+              Are you sure you want to delete <span className="font-semibold text-white">{crops.find(c => c.id === deletingCropId)?.name}</span>? It will be moved to the Trash Bin.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => { setDeletingCropId(null); setIsDeleteCropModalOpen(false); }}
-                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-slate-800 rounded-xl text-sm font-semibold transition-colors w-full"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteCrop}
-                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 rounded-xl text-sm font-semibold transition-colors w-full"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors"
               >
-                Delete forever
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restore Crop Confirmation Modal */}
+      {isRestoreCropModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
+            <div className="flex items-center gap-3 text-emerald-400">
+              <RotateCcw className="w-6 h-6 flex-shrink-0" />
+              <h3 className="font-bold text-lg text-white">Restore Crop</h3>
+            </div>
+            <p className="text-sm text-slate-300">
+              Do you need to restore <span className="font-semibold text-white">{crops.find(c => c.id === restoringCropId)?.name}</span>?
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setRestoringCropId(null); setIsRestoreCropModalOpen(false); }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestoreCrop}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Restore
               </button>
             </div>
           </div>
@@ -1567,13 +1728,15 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <input
-                    type="text"
-                    required
+                  <select
                     value={editingCrop.location}
                     onChange={(e) => setEditingCrop({ ...editingCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {DISTRICTS.map((d, i) => (
+                      <option key={i} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
