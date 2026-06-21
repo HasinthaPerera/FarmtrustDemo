@@ -1,19 +1,18 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const auth = require('../middleware/auth');
 const { Crop, User } = require('../models');
 const { sendNewListingAlert } = require('../utils/emailService');
 
 const router = express.Router();
 
-// Get all crops
+// ── GET /api/crops ────────────────────────────────────────────────────────────
+// Public / buyer-facing: only approved crops are shown in the marketplace.
 router.get('/', async (req, res) => {
   try {
     const crops = await Crop.findAll({
-      include: [{
-        model: User,
-        as: 'farmer',
-        attributes: ['id', 'name', 'email']
-      }],
+      where: { status: 'approved' },
+      include: [{ model: User, as: 'farmer', attributes: ['id', 'name', 'email'] }],
       order: [['createdAt', 'DESC']]
     });
     res.json(crops);
@@ -23,7 +22,24 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Add crop (farmer only)
+// ── GET /api/crops/my ─────────────────────────────────────────────────────────
+// Farmer-only: returns all of the logged-in farmer's crops (all statuses).
+router.get('/my', auth, async (req, res) => {
+  try {
+    const crops = await Crop.findAll({
+      where: { farmerId: req.user.id },
+      include: [{ model: User, as: 'farmer', attributes: ['id', 'name', 'email'] }],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(crops);
+  } catch (err) {
+    console.error('Get my crops error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// ── POST /api/crops ───────────────────────────────────────────────────────────
+// Add a new crop — always starts as 'pending' (awaiting admin approval).
 router.post('/', auth, async (req, res) => {
   const { name, quantity, price, description, district, discount } = req.body;
   try {
@@ -34,90 +50,39 @@ router.post('/', auth, async (req, res) => {
       description,
       district,
       discount: discount ? parseInt(discount) : 0,
-      farmerId: req.user.id
+      farmerId: req.user.id,
+      status: 'pending'   // Must be approved by admin before going live
     });
 
-    // Fetch the created crop with farmer info (we need farmer name and district)
     const cropWithFarmer = await Crop.findByPk(crop.id, {
-      include: [{
-        model: User,
-        as: 'farmer',
-        attributes: ['id', 'name', 'email', 'district']
-      }]
+      include: [{ model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'district'] }]
     });
 
-    // ── 1. Immediate Response ───────────────────────────────────────────────
-    // Return early to ensure the UI feels lightning fast
     res.status(201).json(cropWithFarmer);
-
-    // ── 2. Background Fire-and-Forget Task ──────────────────────────────────
-    if (cropWithFarmer && cropWithFarmer.district) {
-      const farmerName = cropWithFarmer.farmer ? cropWithFarmer.farmer.name : 'A local farmer';
-      const cropDistrict = cropWithFarmer.district;
-      
-      User.findAll({
-        where: {
-          role: 'buyer',
-          district: cropDistrict
-        },
-        attributes: ['email', 'name']
-      }).then(buyers => {
-        if (buyers.length > 0) {
-          const productDetails = {
-            cropName: cropWithFarmer.name,
-            quantity: cropWithFarmer.quantity,
-            price: cropWithFarmer.price,
-            farmerName: farmerName
-          };
-
-          // Map over buyers and send emails concurrently
-          Promise.allSettled(
-            buyers.map(buyer => 
-              sendNewListingAlert(buyer.email, buyer.name, productDetails)
-            )
-          ).then(results => {
-             const successful = results.filter(r => r.status === 'fulfilled').length;
-             console.log(`[Alerts] Sent ${successful}/${buyers.length} new listing alerts in ${cropDistrict}`);
-          });
-        }
-      }).catch(err => {
-         console.error('[Alerts] Background task failed to fetch buyers:', err);
-      });
-    }
-
   } catch (err) {
     console.error('Add crop error:', err);
-    // Only send error if headers haven't been sent yet
-    if (!res.headersSent) {
-      res.status(500).json({ msg: 'Server error' });
-    }
+    if (!res.headersSent) res.status(500).json({ msg: 'Server error' });
   }
 });
 
-// Update crop
+// ── PUT /api/crops/:id ────────────────────────────────────────────────────────
+// Farmer updates their own crop. Editing resets status back to 'pending'
+// so the admin reviews the changes before it goes live again.
 router.put('/:id', auth, async (req, res) => {
   try {
     const crop = await Crop.findByPk(req.params.id);
-    if (!crop) {
-      return res.status(404).json({ msg: 'Crop not found' });
-    }
+    if (!crop) return res.status(404).json({ msg: 'Crop not found' });
+    if (crop.farmerId !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
 
-    // Check if user owns this crop
-    if (crop.farmerId !== req.user.id) {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-
-    await crop.update(req.body);
-
-    // Fetch updated crop with farmer info
-    const updatedCrop = await Crop.findByPk(crop.id, {
-      include: [{
-        model: User,
-        as: 'farmer',
-        attributes: ['id', 'name', 'email']
-      }]
+    // Update fields and reset status to pending for re-review
+    await crop.update({
+      ...req.body,
+      status: 'pending'
     });
 
+    const updatedCrop = await Crop.findByPk(crop.id, {
+      include: [{ model: User, as: 'farmer', attributes: ['id', 'name', 'email'] }]
+    });
     res.json(updatedCrop);
   } catch (err) {
     console.error('Update crop error:', err);
@@ -125,19 +90,13 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// Delete crop
+// ── DELETE /api/crops/:id ─────────────────────────────────────────────────────
+// Farmer deletes their own crop at any time (regardless of status).
 router.delete('/:id', auth, async (req, res) => {
   try {
     const crop = await Crop.findByPk(req.params.id);
-    if (!crop) {
-      return res.status(404).json({ msg: 'Crop not found' });
-    }
-
-    // Check if user owns this crop
-    if (crop.farmerId !== req.user.id) {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-
+    if (!crop) return res.status(404).json({ msg: 'Crop not found' });
+    if (crop.farmerId !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
     await crop.destroy();
     res.json({ msg: 'Crop deleted' });
   } catch (err) {

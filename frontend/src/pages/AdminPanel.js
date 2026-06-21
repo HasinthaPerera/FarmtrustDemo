@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, Wheat, Banknote, ShieldCheck, LayoutDashboard, Settings, RefreshCw,
-  Search, ChevronDown, Plus, Pencil, Trash2, MapPin, ChevronRight, X, UserPlus, AlertTriangle, RotateCcw, Check,
-  Save, Phone, Mail, Globe, Clock, FileText, Info, MessageCircle
+  Search, ChevronDown, Pencil, Trash2, MapPin, X, UserPlus, AlertTriangle, RotateCcw, Check, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import client from '../api/client';
 
@@ -21,12 +19,7 @@ const STATUS_STYLES = {
   warning: 'bg-amber-950/40 text-amber-500 border border-amber-900/50',
 };
 
-const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
-  { id: 'crops', label: 'Crops', icon: <Wheat className="w-5 h-5" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
-];
+// NAV_ITEMS is built dynamically below so we can inject the pending badge count
 
 const DISTRICTS = [
   'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
@@ -42,28 +35,24 @@ const AdminPanel = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // Users local state initialized to match the screenshot
+  // Users state
   const [users, setUsers] = useState([]);
 
-  // Crops local state
-  const [crops, setCrops] = useState([
-    { id: 'CRP-001', name: 'Basmati Rice', isOrganic: true, category: 'Grain', status: 'Active', price: '$2.40', qty: '5,200', farmerInitials: 'RP', farmerName: 'R. Perera', farmerColor: 'bg-blue-900 text-blue-200', location: 'Polonnaruwa', listed: 'May 12' },
-    { id: 'CRP-002', name: 'Red Onion', isOrganic: false, category: 'Vegetable', status: 'Active', price: '$1.10', qty: '3,100', farmerInitials: 'AS', farmerName: 'A. Silva', farmerColor: 'bg-green-900 text-green-200', location: 'Dambulla', listed: 'May 14' },
-    { id: 'CRP-003', name: 'Cinnamon', isOrganic: true, category: 'Spice', status: 'Pending', price: '$18.50', qty: '420', farmerInitials: 'NF', farmerName: 'N. Fernando', farmerColor: 'bg-purple-900 text-purple-200', location: 'Matale', listed: 'May 15' },
-    { id: 'CRP-004', name: 'Pineapple', isOrganic: false, category: 'Fruit', status: 'Active', price: '$0.85', qty: '8,700', farmerInitials: 'SW', farmerName: 'S. Wickrama', farmerColor: 'bg-orange-900 text-orange-200', location: 'Kurunegala', listed: 'May 10' },
-    { id: 'CRP-005', name: 'Black Pepper', isOrganic: false, category: 'Spice', status: 'Inactive', price: '$9.20', qty: '210', farmerInitials: 'KJ', farmerName: 'K. Jayawardena', farmerColor: 'bg-blue-900 text-blue-200', location: 'Kandy', listed: 'Apr 28' },
-    { id: 'CRP-006', name: 'Mango', isOrganic: true, category: 'Fruit', status: 'Active', price: '$1.65', qty: '6,400', farmerInitials: 'DB', farmerName: 'D. Bandara', farmerColor: 'bg-green-900 text-green-200', location: 'Gampola', listed: 'May 13' },
-    { id: 'CRP-007', name: 'Maize', isOrganic: false, category: 'Grain', status: 'Pending', price: '$0.55', qty: '12,000', farmerInitials: 'LR', farmerName: 'L. Rathnayake', farmerColor: 'bg-blue-900 text-blue-200', location: 'Anuradhapura', listed: 'May 16' },
-    { id: 'CRP-008', name: 'Bitter Gourd', isOrganic: true, category: 'Vegetable', status: 'Active', price: '$0.90', qty: '1,800', farmerInitials: 'MK', farmerName: 'M. Kumara', farmerColor: 'bg-pink-900 text-pink-200', location: 'Colombo', listed: 'May 11' },
-  ]);
+  // Crops state — populated from API
+  const [crops, setCrops] = useState([]);
+  const [isLoadingCrops, setIsLoadingCrops] = useState(false);
+  const [cropActionLoading, setCropActionLoading] = useState(null); // id of crop being actioned
 
   // Dashboard metrics state
   const [metrics, setMetrics] = useState({
     totalUsers: '0',
-    activeCrops: crops.filter(c => c.status === 'Active').length.toString(),
+    activeCrops: '0',
     transactions: '$0',
     platformHealth: '99.9%'
   });
+
+  // Pending crops count for nav badge
+  const pendingCount = crops.filter(c => c.status === 'pending').length;
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -74,38 +63,38 @@ const AdminPanel = () => {
     });
   };
 
+  // Fetch crops from API
+  const fetchCrops = useCallback(async () => {
+    setIsLoadingCrops(true);
+    try {
+      const res = await client.get('/admin/crops');
+      setCrops(res.data);
+    } catch (err) {
+      console.error('Error loading crops:', err);
+    } finally {
+      setIsLoadingCrops(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchAdminData = async () => {
       setIsLoadingUsers(true);
       try {
         const token = localStorage.getItem('token');
-        if (token) {
-          client.defaults.headers.common['x-auth-token'] = token;
-        }
-        
-        // Fetch active and trashed users in parallel
+        if (token) client.defaults.headers.common['x-auth-token'] = token;
+
         const [activeRes, trashRes] = await Promise.all([
           client.get('/admin/users'),
           client.get('/admin/users/trash'),
         ]);
         setUsers(activeRes.data);
         setDeletedUsers(trashRes.data);
-        
-        // Fetch real-time dashboard metrics
+
         try {
           const metricsRes = await client.get('/admin/metrics');
-          if (metricsRes.data && metricsRes.data.success) {
-            setMetrics(metricsRes.data.data);
-          }
+          if (metricsRes.data?.success) setMetrics(metricsRes.data.data);
         } catch (metricsErr) {
-          console.error('Error fetching admin metrics:', metricsErr);
-          // Fallback to local counts
-          setMetrics(prev => ({
-            ...prev,
-            totalUsers: activeRes.data.length.toString(),
-            transactions: '$14,920',
-            platformHealth: '99.9%'
-          }));
+          setMetrics(prev => ({ ...prev, totalUsers: activeRes.data.length.toString(), transactions: '$14,920' }));
         }
       } catch (err) {
         console.error('Error loading admin panel data:', err);
@@ -114,7 +103,8 @@ const AdminPanel = () => {
       }
     };
     fetchAdminData();
-  }, [lastRefreshed]);
+    fetchCrops();
+  }, [lastRefreshed, fetchCrops]);
 
   // Search & Filtering states
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,18 +113,50 @@ const AdminPanel = () => {
 
   const [cropSearchQuery, setCropSearchQuery] = useState('');
   const [cropStatusFilter, setCropStatusFilter] = useState('All Status');
-  const [cropCategoryFilter, setCropCategoryFilter] = useState('All Categories');
-
-  // Crop status dropdown state
-  const [openCropDropdownId, setOpenCropDropdownId] = useState(null);
   
   // Filter dropdown states
   const [openUserFilterDropdown, setOpenUserFilterDropdown] = useState(null);
   const [openCropFilterDropdown, setOpenCropFilterDropdown] = useState(null);
 
-  const handleCropStatusChange = (cropId, newStatus) => {
-    setCrops(crops.map(c => c.id === cropId ? { ...c, status: newStatus } : c));
-    setOpenCropDropdownId(null);
+  // Approve a crop via API
+  const handleApproveCrop = async (cropId) => {
+    setCropActionLoading(cropId);
+    try {
+      await client.put(`/admin/crops/${cropId}/approve`);
+      setCrops(prev => prev.map(c => c.id === cropId ? { ...c, status: 'approved' } : c));
+    } catch (err) {
+      console.error('Error approving crop:', err);
+    } finally {
+      setCropActionLoading(null);
+    }
+  };
+
+  // Reject a crop via API
+  const handleRejectCrop = async (cropId) => {
+    setCropActionLoading(cropId);
+    try {
+      await client.put(`/admin/crops/${cropId}/reject`);
+      setCrops(prev => prev.map(c => c.id === cropId ? { ...c, status: 'rejected' } : c));
+    } catch (err) {
+      console.error('Error rejecting crop:', err);
+    } finally {
+      setCropActionLoading(null);
+    }
+  };
+
+  // Admin hard-delete a crop
+  const handleAdminDeleteCrop = async (cropId) => {
+    setCropActionLoading(cropId);
+    try {
+      await client.delete(`/admin/crops/${cropId}`);
+      setCrops(prev => prev.filter(c => c.id !== cropId));
+    } catch (err) {
+      console.error('Error deleting crop:', err);
+    } finally {
+      setCropActionLoading(null);
+      setIsDeleteCropModalOpen(false);
+      setDeletingCropId(null);
+    }
   };
 
   // Modals management states
@@ -143,11 +165,9 @@ const AdminPanel = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteCropModalOpen, setIsDeleteCropModalOpen] = useState(false);
-  const [isRestoreCropModalOpen, setIsRestoreCropModalOpen] = useState(false);
-  const [restoringCropId, setRestoringCropId] = useState(null);
 
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'buyer', status: 'active', district: 'Colombo' });
-  const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: 'Colombo', listed: '' });
+  const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
   const [editingUser, setEditingUser] = useState(null);
   const [editingCrop, setEditingCrop] = useState(null);
   const [isEditCropModalOpen, setIsEditCropModalOpen] = useState(false);
@@ -164,19 +184,7 @@ const AdminPanel = () => {
   };
 
   const handleDeleteCrop = () => {
-    if (deletingCropId) {
-      setCrops(crops.map(c => c.id === deletingCropId ? { ...c, status: 'Trash' } : c));
-      setIsDeleteCropModalOpen(false);
-      setDeletingCropId(null);
-    }
-  };
-
-  const handleRestoreCrop = () => {
-    if (restoringCropId) {
-      handleCropStatusChange(restoringCropId, 'Active');
-      setIsRestoreCropModalOpen(false);
-      setRestoringCropId(null);
-    }
+    if (deletingCropId) handleAdminDeleteCrop(deletingCropId);
   };
 
   const handleAddCrop = (e) => {
@@ -198,7 +206,7 @@ const AdminPanel = () => {
       farmerColor: 'bg-emerald-900 text-emerald-200'
     }, ...crops]);
     setIsAddCropModalOpen(false);
-    setNewCrop({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: 'Colombo', listed: '' });
+    setNewCrop({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
   };
 
   // Trash bin states
@@ -669,52 +677,35 @@ const AdminPanel = () => {
     );
   };
 
-  // 3. Crops View (Styled with dark theme)
+  // 3. Crops View — live data with Approve / Reject actions
   const cropsView = (
     <div className="space-y-6 animate-pageSlideFade">
+      {/* Pending Review banner */}
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-3 bg-amber-950/30 border border-amber-700/40 rounded-xl px-5 py-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <p className="text-sm text-amber-300 font-medium">
+            <span className="font-bold">{pendingCount} crop{pendingCount > 1 ? 's' : ''}</span> awaiting your review. Approve or reject them below.
+          </p>
+        </div>
+      )}
+
       {/* Toolbar */}
-      <div className="bg-[#1e293b]/90 border border-slate-700/50 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+      <div className="bg-[#1e293b]/90 border border-slate-700/50 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-[#94a3b8]" />
           </div>
           <input
             type="text"
-            placeholder="Search by crop, farmer, location..."
+            placeholder="Search by crop name, farmer, district..."
             value={cropSearchQuery}
             onChange={(e) => setCropSearchQuery(e.target.value)}
             className="block w-full pl-10 pr-4 py-2 bg-[#0f172a] border border-slate-700/70 rounded-lg text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-emerald-500 transition-colors"
           />
         </div>
         <div className="flex w-full md:w-auto items-center gap-3">
-          <div className="relative w-full sm:w-48">
-            <button
-              onClick={() => setOpenCropFilterDropdown(openCropFilterDropdown === 'category' ? null : 'category')}
-              className="flex items-center justify-between w-full bg-[#0f172a] border border-slate-700/70 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-emerald-500 cursor-pointer transition-colors"
-            >
-              <span>{cropCategoryFilter}</span>
-              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
-            </button>
-            {openCropFilterDropdown === 'category' && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setOpenCropFilterDropdown(null)} />
-                <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="p-1.5 flex flex-col gap-0.5">
-                    {['All Categories', 'Grain', 'Vegetable', 'Fruit', 'Spice'].map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => { setCropCategoryFilter(opt); setOpenCropFilterDropdown(null); }}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
-                      >
-                        <span className="font-medium">{opt}</span>
-                        {cropCategoryFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Status filter */}
           <div className="relative w-full sm:w-40">
             <button
               onClick={() => setOpenCropFilterDropdown(openCropFilterDropdown === 'status' ? null : 'status')}
@@ -728,11 +719,11 @@ const AdminPanel = () => {
                 <div className="fixed inset-0 z-40" onClick={() => setOpenCropFilterDropdown(null)} />
                 <div className="absolute left-0 mt-2 w-full bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <div className="p-1.5 flex flex-col gap-0.5">
-                    {['All Status', 'Active', 'Pending', 'Inactive', 'Trash'].map((opt) => (
+                    {['All Status', 'pending', 'approved', 'rejected'].map((opt) => (
                       <button
                         key={opt}
                         onClick={() => { setCropStatusFilter(opt); setOpenCropFilterDropdown(null); }}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors capitalize"
                       >
                         <span className="font-medium">{opt}</span>
                         {cropStatusFilter === opt && <Check className="w-4 h-4 text-emerald-500" />}
@@ -743,25 +734,13 @@ const AdminPanel = () => {
               </>
             )}
           </div>
-
-          {/* Trash Bin Toggle Button */}
           <button
-            onClick={() => setCropStatusFilter(cropStatusFilter === 'Trash' ? 'All Status' : 'Trash')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all border whitespace-nowrap ${
-              cropStatusFilter === 'Trash' 
-                ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/30' 
-                : 'bg-[#1e293b] border-slate-700 text-[#94a3b8] hover:text-white hover:bg-slate-800'
-            }`}
+            onClick={fetchCrops}
+            disabled={isLoadingCrops}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1e293b] text-[#94a3b8] hover:bg-slate-800 hover:text-white transition-colors border border-slate-700 text-sm font-semibold disabled:opacity-50"
           >
-            <Trash2 className="w-4 h-4" /> Trash ({crops.filter(c => c.status === 'Trash').length})
-          </button>
-
-          {/* Add Crop Button */}
-          <button 
-            onClick={() => setIsAddCropModalOpen(true)}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/20 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" /> Add Listing
+            <RefreshCw className={`w-4 h-4 ${isLoadingCrops ? 'animate-spin' : ''}`} />
+            Refresh
           </button>
         </div>
       </div>
@@ -772,142 +751,151 @@ const AdminPanel = () => {
           <thead className="bg-[#1e293b]/90 border-b border-slate-700/50">
             <tr>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Crop</th>
-              <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Category</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Price</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Qty (KG)</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Farmer</th>
-              <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Location</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">District</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Listed</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
-            {crops
-              .filter(c => {
-                const matchesSearch = c.name.toLowerCase().includes(cropSearchQuery.toLowerCase()) || c.farmerName.toLowerCase().includes(cropSearchQuery.toLowerCase()) || c.location.toLowerCase().includes(cropSearchQuery.toLowerCase());
-                const matchesStatus = cropStatusFilter === 'Trash' 
-                  ? c.status === 'Trash' 
-                  : (cropStatusFilter === 'All Status' ? c.status !== 'Trash' : c.status === cropStatusFilter);
-                const matchesCategory = cropCategoryFilter === 'All Categories' || c.category === cropCategoryFilter;
-                return matchesSearch && matchesStatus && matchesCategory;
-              })
-              .map((crop) => (
-                <tr key={crop.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#0f172a] border border-slate-700 flex items-center justify-center flex-shrink-0">
-                        {crop.category === 'Grain' ? <Wheat className="w-5 h-5 text-amber-500" /> : 
-                         crop.category === 'Vegetable' ? <div className="w-4 h-4 rounded-full bg-emerald-500" /> : 
-                         crop.category === 'Fruit' ? <div className="w-4 h-4 rounded-md bg-orange-400" /> : 
-                         <div className="w-3 h-3 rounded-sm bg-purple-400 rotate-45" />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-white">{crop.name}</span>
-                        <span className="text-xs text-slate-500 mt-0.5">{crop.id}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-[#94a3b8]">{crop.category}</td>
-                  <td className="px-6 py-4">
-                    <div className="relative">
-                      <button
-                        onClick={() => setOpenCropDropdownId(openCropDropdownId === crop.id ? null : crop.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider transition-colors ${
-                          crop.status === 'Active' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50 hover:bg-emerald-900/40' : 
-                          crop.status === 'Pending' ? 'bg-amber-950/40 text-amber-500 border border-amber-900/50 hover:bg-amber-900/40' : 
-                          crop.status === 'Trash' ? 'bg-rose-950/40 text-rose-400 border border-rose-900/50 hover:bg-rose-900/40' : 
-                          'bg-slate-800/80 text-[#94a3b8] border border-slate-700 hover:bg-slate-700/80'
-                        }`}
-                      >
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          crop.status === 'Active' ? 'bg-emerald-400' : 
-                          crop.status === 'Pending' ? 'bg-amber-500' : 
-                          crop.status === 'Trash' ? 'bg-rose-400' : 
-                          'bg-slate-400'
-                        }`} />
-                        {crop.status}
-                        <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
-                      </button>
-                      
-                      {openCropDropdownId === crop.id && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setOpenCropDropdownId(null)} />
-                          <div className="absolute left-0 mt-2 w-48 bg-[#0f172a] border border-slate-700/80 rounded-xl shadow-2xl z-50">
-                            <div className="px-4 py-3 border-b border-slate-700/50">
-                              <span className="text-[10px] font-bold text-[#64748b] tracking-widest uppercase">Change Status</span>
-                            </div>
-                            <div className="p-1.5 flex flex-col gap-0.5">
-                              {['Active', 'Pending', 'Inactive'].map((statusOption) => (
-                                <button
-                                  key={statusOption}
-                                  onClick={() => handleCropStatusChange(crop.id, statusOption)}
-                                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800/80 rounded-lg transition-colors"
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <div className={`w-2 h-2 rounded-full ${
-                                      statusOption === 'Active' ? 'bg-emerald-500' :
-                                      statusOption === 'Pending' ? 'bg-amber-500' :
-                                      statusOption === 'Trash' ? 'bg-rose-500' :
-                                      'bg-slate-500'
-                                    }`} />
-                                    <span className="font-medium">{statusOption}</span>
-                                  </div>
-                                  {crop.status === statusOption && <Check className="w-4 h-4 text-emerald-500" />}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-white font-medium">{crop.price} <span className="text-slate-500 text-xs">/kg</span></td>
-                  <td className="px-6 py-4">
-                    <span className="text-white font-medium">{crop.qty}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${crop.farmerColor || 'bg-slate-800 text-slate-300'}`}>
-                        {crop.farmerInitials || crop.farmerName.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="text-slate-300 font-medium">{crop.farmerName}</span>
-</div>
-                  </td>
-                  <td className="px-6 py-4 text-[#94a3b8]">{crop.location}</td>
-<td className="px-6 py-4 text-[#94a3b8]">{crop.location}</td>
-<td className="px-6 py-4 text-[#94a3b8]">{crop.listed}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-4">
-                      {crop.status === 'Trash' ? (
-                        <button
-                          onClick={() => { setRestoringCropId(crop.id); setIsRestoreCropModalOpen(true); }}
-                          className="p-1 text-emerald-400 hover:text-emerald-300 transition-colors"
-                          title="Restore Crop"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => { setEditingCrop({ ...crop }); setIsEditCropModalOpen(true); }}
-                          className="p-1 text-slate-500 hover:text-emerald-400 transition-colors"
-                          title="Edit Crop"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => { setDeletingCropId(crop.id); setIsDeleteCropModalOpen(true); }}
-                        className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                        title="Delete Crop"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+            {isLoadingCrops ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 8 }).map((__, j) => (
+                    <td key={j} className="px-6 py-4"><div className="h-3 bg-slate-700/60 rounded-full" /></td>
+                  ))}
                 </tr>
-              ))}
+              ))
+            ) : (
+              crops
+                .filter(c => {
+                  const farmerName = c.farmer?.name || '';
+                  const district = c.district || '';
+                  const matchesSearch =
+                    c.name.toLowerCase().includes(cropSearchQuery.toLowerCase()) ||
+                    farmerName.toLowerCase().includes(cropSearchQuery.toLowerCase()) ||
+                    district.toLowerCase().includes(cropSearchQuery.toLowerCase());
+                  const matchesStatus = cropStatusFilter === 'All Status' || c.status === cropStatusFilter;
+                  return matchesSearch && matchesStatus;
+                })
+                .map((crop) => {
+                  const isActioning = cropActionLoading === crop.id;
+                  const farmerName = crop.farmer?.name || 'Unknown';
+                  const farmerInitials = farmerName.slice(0, 2).toUpperCase();
+                  return (
+                    <tr key={crop.id} className={`hover:bg-slate-800/30 transition-colors ${
+                      crop.status === 'pending' ? 'border-l-2 border-amber-500/50' : ''
+                    }`}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#0f172a] border border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <Wheat className="w-5 h-5 text-emerald-500" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-white">{crop.name}</span>
+                            <span className="text-xs text-slate-500 mt-0.5">#{crop.id}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
+                          crop.status === 'approved' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50' :
+                          crop.status === 'pending'  ? 'bg-amber-950/40 text-amber-400 border border-amber-900/50' :
+                          'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                        }`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${
+                            crop.status === 'approved' ? 'bg-emerald-400' :
+                            crop.status === 'pending'  ? 'bg-amber-400 animate-pulse' :
+                            'bg-rose-400'
+                          }`} />
+                          {crop.status}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 text-white font-medium">
+                        Rs. {Number(crop.price).toFixed(2)} <span className="text-slate-500 text-xs">/kg</span>
+                      </td>
+                      <td className="px-6 py-4 text-white font-medium">{crop.quantity}</td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
+                            {farmerInitials}
+                          </div>
+                          <span className="text-slate-300 font-medium">{farmerName}</span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>{crop.district}</span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-[#94a3b8]">
+                        {new Date(crop.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Approve */}
+                          {crop.status !== 'approved' && (
+                            <button
+                              onClick={() => handleApproveCrop(crop.id)}
+                              disabled={isActioning}
+                              title="Approve"
+                              className="p-1.5 rounded-lg bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/60 border border-emerald-900/50 transition-colors disabled:opacity-40"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {/* Reject */}
+                          {crop.status !== 'rejected' && (
+                            <button
+                              onClick={() => handleRejectCrop(crop.id)}
+                              disabled={isActioning}
+                              title="Reject"
+                              className="p-1.5 rounded-lg bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-900/50 transition-colors disabled:opacity-40"
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {/* Delete */}
+                          <button
+                            onClick={() => { setDeletingCropId(crop.id); setIsDeleteCropModalOpen(true); }}
+                            disabled={isActioning}
+                            title="Delete"
+                            className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-40"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+            )}
+            {!isLoadingCrops && crops.filter(c => {
+              const farmerName = c.farmer?.name || '';
+              const district = c.district || '';
+              return (
+                (c.name.toLowerCase().includes(cropSearchQuery.toLowerCase()) ||
+                 farmerName.toLowerCase().includes(cropSearchQuery.toLowerCase()) ||
+                 district.toLowerCase().includes(cropSearchQuery.toLowerCase())) &&
+                (cropStatusFilter === 'All Status' || c.status === cropStatusFilter)
+              );
+            }).length === 0 && (
+              <tr>
+                <td colSpan="8" className="px-6 py-10 text-center text-[#64748b]">
+                  No crops found matching the current filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -915,236 +903,42 @@ const AdminPanel = () => {
   );
 
   // 4. Settings View (Styled with dark theme)
-  const SettingsView = () => {
-    const [contact, setContact] = useState(() => {
-      const saved = localStorage.getItem('siteContactInfo');
-      return saved ? JSON.parse(saved) : {
-        email: 'support@farmtrust.lk',
-        phone: '+94 77 123 4567',
-        whatsapp: '+94 77 123 4567',
-        address: 'No. 45, Galle Road, Colombo 03, Sri Lanka',
-        hours: 'Mon – Fri, 8:00 AM – 5:00 PM'
-      };
-    });
-
-    const handleSaveContact = () => {
-      localStorage.setItem('siteContactInfo', JSON.stringify(contact));
-      alert('Contact info saved successfully!');
-    };
-
-    return (
-      <div className="flex flex-col gap-6 animate-pageSlideFade max-w-7xl mx-auto w-full">
-        {/* System Settings Card */}
-        <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-600/20 flex items-center justify-center shrink-0">
-                <Settings className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">System Settings</h3>
-                <p className="text-sm text-slate-400 mt-0.5">Core platform configuration</p>
-              </div>
-            </div>
-            <button className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all items-center gap-2 text-sm">
-              <Save className="w-4 h-4" />
-              Save Settings
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Platform Name</label>
-              <input
-                type="text"
-                defaultValue="FarmTrust"
-                className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Commission Rate (%)</label>
-              <input
-                type="number"
-                defaultValue="5"
-                className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Currency</label>
-              <div className="relative">
-                <select
-                  defaultValue="LKR"
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
-                >
-                  <option value="LKR">LKR (Rs.)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Time Zone</label>
-              <div className="relative">
-                <select
-                  defaultValue="Asia/Colombo"
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none cursor-pointer"
-                >
-                  <option value="Asia/Colombo">Asia/Colombo (GMT+5:30)</option>
-                  <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
-                  <option value="UTC">UTC (GMT+0:00)</option>
-                  <option value="America/New_York">America/New_York (GMT-5:00)</option>
-                  <option value="Europe/London">Europe/London (GMT+0:00)</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-          
-          <button className="md:hidden mt-6 w-full flex justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all items-center gap-2 text-sm">
-            <Save className="w-4 h-4" />
-            Save Settings
-          </button>
+  const SettingsView = () => (
+    <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-8 text-slate-300 shadow-lg animate-pageSlideFade">
+      <h3 className="text-xl font-bold text-white mb-6">System Settings</h3>
+      <div className="space-y-6 max-w-xl">
+        <div>
+          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Platform Name</label>
+          <input
+            type="text"
+            defaultValue="FarmTrust"
+            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          />
         </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-          {/* Contact & Support Card */}
-          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-rose-600/20 flex items-center justify-center shrink-0">
-                <MessageCircle className="w-6 h-6 text-rose-400" />
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-white">Contact & Support</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full">New</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-0.5">Shown to farmers when they need help</p>
-              </div>
-            </div>
-            
-            <div className="space-y-5 mt-6 flex-1">
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Email</label>
-                <input
-                  type="email"
-                  value={contact.email}
-                  onChange={(e) => setContact({...contact, email: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={contact.phone}
-                    onChange={(e) => setContact({...contact, phone: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#94a3b8] mb-2">WhatsApp Number</label>
-                  <input
-                    type="tel"
-                    value={contact.whatsapp}
-                    onChange={(e) => setContact({...contact, whatsapp: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Office Address</label>
-                <input
-                  type="text"
-                  value={contact.address}
-                  onChange={(e) => setContact({...contact, address: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Support Hours</label>
-                <input
-                  type="text"
-                  value={contact.hours}
-                  onChange={(e) => setContact({...contact, hours: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-            </div>
-            <button onClick={handleSaveContact} className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
-              <Save className="w-4 h-4" />
-              Save Contact Info
-            </button>
-          </div>
-
-          {/* Terms & Policies Card */}
-          <div className="bg-[#1e293b]/70 border border-slate-700/50 backdrop-blur-md rounded-2xl p-6 md:p-8 text-slate-300 shadow-lg h-full flex flex-col">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center shrink-0">
-                <FileText className="w-6 h-6 text-blue-400" />
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-white">Terms & Policies</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full">New</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-0.5">Legal links shown during signup & footer</p>
-              </div>
-            </div>
-            
-            <div className="space-y-5 mt-6 flex-1">
-              <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3.5 flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-blue-100/70 leading-relaxed">These links appear on the signup page and platform footer. Make sure URLs are publicly accessible.</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Terms of Service URL</label>
-                <input
-                  type="url"
-                  defaultValue="https://farmtrust.lk/terms"
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Privacy Policy URL</label>
-                <input
-                  type="url"
-                  defaultValue="https://farmtrust.lk/privacy"
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">
-                  Refund Policy URL <span className="text-slate-500 font-normal ml-1">(optional)</span>
-                </label>
-                <input
-                  type="url"
-                  defaultValue="https://farmtrust.lk/refunds"
-                  className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Last Updated Date</label>
-                <input
-                  type="date"
-                  defaultValue="2025-05-01"
-                  className="w-full sm:w-fit px-4 py-3 rounded-xl bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                />
-              </div>
-            </div>
-            <button className="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 text-sm">
-              <Save className="w-4 h-4" />
-              Save Policies
-            </button>
-          </div>
+        <div>
+          <label className="block text-sm font-semibold text-[#94a3b8] mb-2">Commission Rate (%)</label>
+          <input
+            type="number"
+            defaultValue="5"
+            className="w-full px-4 py-3 rounded-lg bg-[#0f172a] border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          />
         </div>
+        <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-emerald-900/20 transition-all">
+          Save Settings
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'users',     label: 'Users',     icon: <Users className="w-5 h-5" /> },
+    {
+      id: 'crops', label: 'Crops', icon: <Wheat className="w-5 h-5" />,
+      badge: pendingCount > 0 ? pendingCount : null
+    },
+    { id: 'settings',  label: 'Settings',  icon: <Settings className="w-5 h-5" /> },
+  ];
 
   const VIEW_MAP = {
     dashboard: <DashboardView />,
@@ -1188,12 +982,14 @@ const AdminPanel = () => {
       {/* Left Sidebar */}
       <aside className="w-full md:w-64 bg-[#0f172a] border-b md:border-b-0 md:border-r border-slate-800 flex flex-col flex-shrink-0 shadow-xl">
         <div className="px-6 py-5 border-b border-slate-800 flex justify-between items-center">
-
+          <p className="text-xs font-bold uppercase tracking-widest text-[#64748b]">
+            Admin Control Console
+          </p>
         </div>
 
         {/* Navigation Tabs */}
         <nav className="flex-1 px-3 py-4 flex flex-row md:flex-col overflow-x-auto gap-2 md:space-y-1">
-          {NAV_ITEMS.map(item => {
+          {navItems.map(item => {
             const isActive = activeTab === item.id;
             return (
               <button
@@ -1209,7 +1005,12 @@ const AdminPanel = () => {
                 `}
               >
                 <span className="text-base leading-none">{item.icon}</span>
-                <span className="whitespace-nowrap">{item.label}</span>
+                <span className="whitespace-nowrap flex-1">{item.label}</span>
+                {item.badge && (
+                  <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-[10px] font-bold text-white flex items-center justify-center">
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1612,15 +1413,14 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <select
-                    value={newCrop.location || 'Colombo'}
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dambulla"
+                    value={newCrop.location}
                     onChange={(e) => setNewCrop({ ...newCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    {DISTRICTS.map((d, i) => (
-                      <option key={i} value={d}>{d}</option>
-                    ))}
-                  </select>
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
                 </div>
 
                 <div>
@@ -1659,55 +1459,31 @@ const AdminPanel = () => {
       {/* 6. Delete Crop Modal */}
       {isDeleteCropModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
-              <h3 className="font-bold text-lg text-white">Delete Crop</h3>
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-8 animate-pageSlideFade space-y-4">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-lg text-white">
+                Delete {crops.find(c => c.id === deletingCropId)?.name} permanently?
+              </h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                This crop and all its data will be removed forever and cannot be recovered.
+              </p>
             </div>
-            <p className="text-sm text-slate-300">
-              Are you sure you want to delete <span className="font-semibold text-white">{crops.find(c => c.id === deletingCropId)?.name}</span>? It will be moved to the Trash Bin.
-            </p>
-            <div className="flex justify-end gap-3 pt-2">
+            
+            <div className="grid grid-cols-2 gap-3 pt-6">
               <button
                 onClick={() => { setDeletingCropId(null); setIsDeleteCropModalOpen(false); }}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-slate-800 rounded-xl text-sm font-semibold transition-colors w-full"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteCrop}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors"
+                className="px-4 py-2.5 bg-transparent border border-slate-700 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 rounded-xl text-sm font-semibold transition-colors w-full"
               >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Restore Crop Confirmation Modal */}
-      {isRestoreCropModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
-            <div className="flex items-center gap-3 text-emerald-400">
-              <RotateCcw className="w-6 h-6 flex-shrink-0" />
-              <h3 className="font-bold text-lg text-white">Restore Crop</h3>
-            </div>
-            <p className="text-sm text-slate-300">
-              Do you need to restore <span className="font-semibold text-white">{crops.find(c => c.id === restoringCropId)?.name}</span>?
-            </p>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => { setRestoringCropId(null); setIsRestoreCropModalOpen(false); }}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRestoreCrop}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-semibold transition-colors"
-              >
-                Restore
+                Delete forever
               </button>
             </div>
           </div>
@@ -1791,15 +1567,13 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={editingCrop.location}
                     onChange={(e) => setEditingCrop({ ...editingCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    {DISTRICTS.map((d, i) => (
-                      <option key={i} value={d}>{d}</option>
-                    ))}
-                  </select>
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
                 </div>
 
                 <div>

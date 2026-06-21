@@ -8,6 +8,15 @@ const { OAuth2Client } = require('google-auth-library');
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// In-memory store for pending OTP registrations
+const otpStore = new Map();
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes code validity
+
+// Helper to generate a random 6-digit numeric OTP code
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // Note: Nodemailer logic and templates are now centralized in utils/emailService.js
 
 // ────────────────────────────────────────────────────────────────────────────

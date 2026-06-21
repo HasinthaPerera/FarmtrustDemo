@@ -209,4 +209,83 @@ router.delete('/users/:id/permanent', authMiddleware, adminOnly, async (req, res
   }
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// ADMIN CROPS CRUD ENDPOINTS
+// ────────────────────────────────────────────────────────────────────────────
+
+// 1. GET /api/admin/crops - Get ALL crops (all statuses) for admin review
+router.get('/crops', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const crops = await Crop.findAll({
+      include: [{ model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'district'] }],
+      order: [
+        // Pending crops first so admin sees what needs review immediately
+        [require('sequelize').literal("FIELD(Crop.status,'pending','rejected','approved')")],
+        ['createdAt', 'DESC']
+      ]
+    });
+    return res.json(crops);
+  } catch (err) {
+    console.error('[GET /api/admin/crops] Error:', err);
+    return res.status(500).json({ msg: 'Server error fetching crops' });
+  }
+});
+
+// 2. PUT /api/admin/crops/:id/approve - Approve a pending crop
+router.put('/crops/:id/approve', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const crop = await Crop.findByPk(req.params.id);
+    if (!crop) return res.status(404).json({ msg: 'Crop not found' });
+    crop.status = 'approved';
+    await crop.save();
+
+    // Fire-and-forget: notify buyers in the same district
+    if (crop.district) {
+      const { sendNewListingAlert } = require('../utils/emailService');
+      User.findAll({ where: { role: 'buyer', district: crop.district }, attributes: ['email', 'name'] })
+        .then(buyers => {
+          if (buyers.length) {
+            const farmerName = 'A local farmer';
+            const details = { cropName: crop.name, quantity: crop.quantity, price: crop.price, farmerName };
+            Promise.allSettled(buyers.map(b => sendNewListingAlert(b.email, b.name, details)))
+              .then(results => console.log(`[Alerts] Sent ${results.filter(r => r.status === 'fulfilled').length}/${buyers.length} listing alerts`));
+          }
+        }).catch(err => console.error('[Alerts] Failed to fetch buyers:', err));
+    }
+
+    return res.json({ msg: 'Crop approved', crop });
+  } catch (err) {
+    console.error('[PUT /api/admin/crops/:id/approve] Error:', err);
+    return res.status(500).json({ msg: 'Server error approving crop' });
+  }
+});
+
+// 3. PUT /api/admin/crops/:id/reject - Reject a crop
+router.put('/crops/:id/reject', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const crop = await Crop.findByPk(req.params.id);
+    if (!crop) return res.status(404).json({ msg: 'Crop not found' });
+    crop.status = 'rejected';
+    await crop.save();
+    return res.json({ msg: 'Crop rejected', crop });
+  } catch (err) {
+    console.error('[PUT /api/admin/crops/:id/reject] Error:', err);
+    return res.status(500).json({ msg: 'Server error rejecting crop' });
+  }
+});
+
+// 4. DELETE /api/admin/crops/:id - Admin hard-deletes a crop
+router.delete('/crops/:id', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const crop = await Crop.findByPk(req.params.id);
+    if (!crop) return res.status(404).json({ msg: 'Crop not found' });
+    await crop.destroy();
+    return res.json({ msg: 'Crop deleted permanently', id: req.params.id });
+  } catch (err) {
+    console.error('[DELETE /api/admin/crops/:id] Error:', err);
+    return res.status(500).json({ msg: 'Server error deleting crop' });
+  }
+});
+
 module.exports = router;
+

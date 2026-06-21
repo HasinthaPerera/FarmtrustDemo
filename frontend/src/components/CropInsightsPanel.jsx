@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowUp, 
   ArrowDown
@@ -40,6 +40,9 @@ const CropInsightsPanel = ({
   cropName, 
   cropEmoji 
 }) => {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   // Format forecast for Area range
   const formattedForecast = forecast.map(f => ({
     ...f,
@@ -76,6 +79,41 @@ const CropInsightsPanel = ({
     }
     return weeks;
   }, [history]);
+
+  // Combine history and forecast for the table filter
+  const allPrices = useMemo(() => {
+    const hist = (history || []).map(h => ({
+      dateObj: new Date(h.date),
+      dateStr: new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      price: h.price,
+      type: 'Historical'
+    }));
+    const fore = (forecast || []).map(f => ({
+      dateObj: new Date(f.date),
+      dateStr: new Date(f.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      price: f.predicted,
+      type: 'Forecast'
+    }));
+    return [...hist, ...fore].sort((a, b) => b.dateObj - a.dateObj); // Newest first
+  }, [history, forecast]);
+
+  // Filtered prices based on date range
+  const filteredPrices = useMemo(() => {
+    if (!startDate && !endDate) return allPrices;
+    
+    const startStr = startDate || '0000-00-00';
+    const endStr = endDate || '9999-12-31';
+
+    return allPrices.filter(item => {
+      // Format item date as YYYY-MM-DD local time to avoid timezone bugs
+      const year = item.dateObj.getFullYear();
+      const month = String(item.dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(item.dateObj.getDate()).padStart(2, '0');
+      const itemDateStr = `${year}-${month}-${day}`;
+
+      return itemDateStr >= startStr && itemDateStr <= endStr;
+    });
+  }, [allPrices, startDate, endDate]);
 
   // Market status color logic based on requirements
   let statusBadgeColor = 'bg-gray-100 dark:bg-slate-500/20 text-gray-700 dark:text-slate-400';
@@ -270,6 +308,80 @@ const CropInsightsPanel = ({
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Price Data Table with Date Filter */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-gray-200 dark:border-slate-800 shadow-sm mb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Price History & Forecast Data</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Filter prices by selecting a date range.</p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 dark:text-slate-400 mb-1">Start Date</label>
+              <input 
+                type="date" 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 dark:text-slate-400 mb-1">End Date</label>
+              <input 
+                type="date" 
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <button 
+              onClick={() => { setStartDate(''); setEndDate(''); }}
+              className="mt-5 px-3 py-1.5 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 rounded-lg text-sm transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-track]:bg-gray-100 dark:[&::-webkit-scrollbar-track]:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">
+              <tr>
+                <th className="px-4 py-3 font-semibold text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700">Date</th>
+                <th className="px-4 py-3 font-semibold text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700">Price (Rs.)</th>
+                <th className="px-4 py-3 font-semibold text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700">Type</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800/50">
+              {filteredPrices.length > 0 ? (
+                filteredPrices.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-200">{item.dateStr}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-200">{item.price.toFixed(2)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                        item.type === 'Forecast' 
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
+                      }`}>
+                        {item.type}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="px-4 py-8 text-center text-gray-500 dark:text-slate-400">
+                    No prices found for the selected date range.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

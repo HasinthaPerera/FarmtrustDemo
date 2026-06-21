@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import client from '../api/client';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag } from 'lucide-react';
 import CropCard from '../components/CropCard';
+
+const SL_DISTRICTS = [
+  'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+  'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+  'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+  'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+  'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya',
+];
 
 const BuyerDashboard = () => {
   const { addToCart } = useCart();
   const [crops, setCrops] = useState([]);
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('All');
+  const [variantFilter, setVariantFilter] = useState('All');
   const [error, setError] = useState('');
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState(null);
@@ -41,18 +50,18 @@ const BuyerDashboard = () => {
     };
   };
 
-  const fetchOrders = async () => {
-    try {
-      const res = await client.get('/orders/my', getAuthConfig());
-      setOrders(res.data);
-    } catch (err) {
-      const msg = err.response?.data?.msg;
-      if (handleAuthFailure(msg)) return;
-      console.error('Error fetching orders:', err);
-    }
-  };
-
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await client.get('/orders/my', getAuthConfig());
+        setOrders(res.data);
+      } catch (err) {
+        const msg = err.response?.data?.msg;
+        if (handleAuthFailure(msg)) return;
+        console.error('Error fetching orders:', err);
+      }
+    };
+
     const fetchCrops = async () => {
       try {
         const res = await client.get('/crops', getAuthConfig());
@@ -150,11 +159,9 @@ const BuyerDashboard = () => {
       );
 
       await Promise.all([
-        client.get('/crops', getAuthConfig()),
-        client.get('/orders/my', getAuthConfig())
-      ]).then(([cropsRes, ordersRes]) => {
+        client.get('/crops', getAuthConfig())
+      ]).then(([cropsRes]) => {
         setCrops(cropsRes.data);
-        setOrders(ordersRes.data);
       });
 
       closePaymentWindow();
@@ -167,9 +174,14 @@ const BuyerDashboard = () => {
     }
   };
 
-  const filteredCrops = crops.filter(crop =>
-    crop.name.toLowerCase().includes(filter.toLowerCase())
-  );
+  const uniqueVariants = [...new Set(crops.map(c => c.name))].sort();
+
+  const filteredCrops = crops.filter(crop => {
+    const matchesSearch = crop.name.toLowerCase().includes(filter.toLowerCase());
+    const matchesDistrict = districtFilter === 'All' || crop.district === districtFilter;
+    const matchesVariant = variantFilter === 'All' || crop.name === variantFilter;
+    return matchesSearch && matchesDistrict && matchesVariant;
+  });
 
   const totalPreview = selectedCrop ? (Number(selectedCrop.price) * Number(quantity || 0)).toFixed(2) : '0.00';
 
@@ -208,17 +220,36 @@ const BuyerDashboard = () => {
         <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-display font-bold text-primary-900 dark:text-emerald-300">Buyer Dashboard</h1>
-          <span className="badge badge-success">Live Market</span>
         </div>
         <h2 className="page-title">Available Crops</h2>
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col sm:flex-row gap-4">
           <input
             type="text"
             placeholder="Search crops..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
+            className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400 flex-1"
           />
+          <select
+            value={districtFilter}
+            onChange={(e) => setDistrictFilter(e.target.value)}
+            className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white sm:w-48"
+          >
+            <option value="All">All Districts</option>
+            {SL_DISTRICTS.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+          <select
+            value={variantFilter}
+            onChange={(e) => setVariantFilter(e.target.value)}
+            className="input-field dark:bg-slate-700 dark:border-slate-600 dark:text-white sm:w-48"
+          >
+            <option value="All">All Vegetables</option>
+            {uniqueVariants.map(v => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCrops.length > 0 ? (
