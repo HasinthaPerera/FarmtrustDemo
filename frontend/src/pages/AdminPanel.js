@@ -142,6 +142,8 @@ const AdminPanel = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteCropModalOpen, setIsDeleteCropModalOpen] = useState(false);
+  const [isRestoreCropModalOpen, setIsRestoreCropModalOpen] = useState(false);
+  const [restoringCropId, setRestoringCropId] = useState(null);
 
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'buyer', status: 'active', district: 'Colombo' });
   const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: 'Colombo', listed: '' });
@@ -165,6 +167,14 @@ const AdminPanel = () => {
       setCrops(crops.map(c => c.id === deletingCropId ? { ...c, status: 'Trash' } : c));
       setIsDeleteCropModalOpen(false);
       setDeletingCropId(null);
+    }
+  };
+
+  const handleRestoreCrop = () => {
+    if (restoringCropId) {
+      handleCropStatusChange(restoringCropId, 'Active');
+      setIsRestoreCropModalOpen(false);
+      setRestoringCropId(null);
     }
   };
 
@@ -767,6 +777,7 @@ const AdminPanel = () => {
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Qty (KG)</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Farmer</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Location</th>
+              <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">District</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider">Listed</th>
               <th className="px-6 py-4 font-bold text-[#94a3b8] text-xs uppercase tracking-wider text-center">Actions</th>
             </tr>
@@ -861,24 +872,30 @@ const AdminPanel = () => {
                         {crop.farmerInitials || crop.farmerName.substring(0, 2).toUpperCase()}
                       </div>
                       <span className="text-slate-300 font-medium">{crop.farmerName}</span>
-                    </div>
+</div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{crop.location}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-[#94a3b8]">{crop.listed}</td>
+                  <td className="px-6 py-4 text-[#94a3b8]">{crop.location}</td>
+<td className="px-6 py-4 text-[#94a3b8]">{crop.location}</td>
+<td className="px-6 py-4 text-[#94a3b8]">{crop.listed}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-4">
-                      <button 
-                        onClick={() => { setEditingCrop({...crop}); setIsEditCropModalOpen(true); }}
-                        className="p-1 text-slate-500 hover:text-emerald-400 transition-colors"
-                        title="Edit Crop"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                      {crop.status === 'Trash' ? (
+                        <button
+                          onClick={() => { setRestoringCropId(crop.id); setIsRestoreCropModalOpen(true); }}
+                          className="p-1 text-emerald-400 hover:text-emerald-300 transition-colors"
+                          title="Restore Crop"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setEditingCrop({ ...crop }); setIsEditCropModalOpen(true); }}
+                          className="p-1 text-slate-500 hover:text-emerald-400 transition-colors"
+                          title="Edit Crop"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
                       <button 
                         onClick={() => { setDeletingCropId(crop.id); setIsDeleteCropModalOpen(true); }}
                         className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
@@ -1459,6 +1476,35 @@ const AdminPanel = () => {
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restore Crop Confirmation Modal */}
+      {isRestoreCropModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e293b] border border-slate-700 text-white rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-pageSlideFade space-y-4">
+            <div className="flex items-center gap-3 text-emerald-400">
+              <RotateCcw className="w-6 h-6 flex-shrink-0" />
+              <h3 className="font-bold text-lg text-white">Restore Crop</h3>
+            </div>
+            <p className="text-sm text-slate-300">
+              Do you need to restore <span className="font-semibold text-white">{crops.find(c => c.id === restoringCropId)?.name}</span>?
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setRestoringCropId(null); setIsRestoreCropModalOpen(false); }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestoreCrop}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Restore
               </button>
             </div>
           </div>
