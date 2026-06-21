@@ -14,6 +14,7 @@ const SL_DISTRICTS = [
 const BuyerDashboard = () => {
   const { addToCart } = useCart();
   const [crops, setCrops] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('');
   const [districtFilter, setDistrictFilter] = useState('All');
   const [variantFilter, setVariantFilter] = useState('All');
@@ -49,18 +50,18 @@ const BuyerDashboard = () => {
     };
   };
 
-  const fetchOrders = async () => {
-    try {
-      const res = await client.get('/orders/my', getAuthConfig());
-      setOrders(res.data);
-    } catch (err) {
-      const msg = err.response?.data?.msg;
-      if (handleAuthFailure(msg)) return;
-      console.error('Error fetching orders:', err);
-    }
-  };
-
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await client.get('/orders/my', getAuthConfig());
+        setOrders(res.data);
+      } catch (err) {
+        const msg = err.response?.data?.msg;
+        if (handleAuthFailure(msg)) return;
+        console.error('Error fetching orders:', err);
+      }
+    };
+
     const fetchCrops = async () => {
       try {
         const res = await client.get('/crops', getAuthConfig());
