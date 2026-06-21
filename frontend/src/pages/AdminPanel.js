@@ -144,7 +144,7 @@ const AdminPanel = () => {
   const [isDeleteCropModalOpen, setIsDeleteCropModalOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'buyer', status: 'active', district: 'Colombo' });
-  const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
+  const [newCrop, setNewCrop] = useState({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: 'Colombo', listed: '' });
   const [editingUser, setEditingUser] = useState(null);
   const [editingCrop, setEditingCrop] = useState(null);
   const [isEditCropModalOpen, setIsEditCropModalOpen] = useState(false);
@@ -187,7 +187,7 @@ const AdminPanel = () => {
       farmerColor: 'bg-emerald-900 text-emerald-200'
     }, ...crops]);
     setIsAddCropModalOpen(false);
-    setNewCrop({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: '', listed: '' });
+    setNewCrop({ name: '', category: 'Grain', price: '', qty: '', farmerName: '', location: 'Colombo', listed: '' });
   };
 
   // Trash bin states
@@ -1392,14 +1392,15 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dambulla"
-                    value={newCrop.location}
+                  <select
+                    value={newCrop.location || 'Colombo'}
                     onChange={(e) => setNewCrop({ ...newCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {DISTRICTS.map((d, i) => (
+                      <option key={i} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1546,13 +1547,15 @@ const AdminPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Location</label>
-                  <input
-                    type="text"
-                    required
+                  <select
                     value={editingCrop.location}
                     onChange={(e) => setEditingCrop({ ...editingCrop, location: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                    className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {DISTRICTS.map((d, i) => (
+                      <option key={i} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

@@ -66,7 +66,7 @@ sequelize.authenticate()
   .catch(err => console.log('MySQL connection error:', err));
 
 // Sync database (create tables)
-sequelize.sync({ alter: true })
+sequelize.sync()
   .then(() => console.log('Database synchronized'))
   .catch(err => console.log('Database sync error:', err));
 

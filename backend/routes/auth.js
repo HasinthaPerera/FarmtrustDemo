@@ -22,9 +22,11 @@ router.post('/send-otp', async (req, res) => {
     return res.status(400).json({ msg: 'Name, email, password and district are required.' });
   }
 
+  const cleanEmail = email.trim().toLowerCase();
+
   try {
     // Check for existing verified account
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await User.findOne({ where: { email: cleanEmail } });
     if (existingUser) {
       return res.status(400).json({ msg: 'An account with this email already exists.' });
     }
@@ -33,10 +35,10 @@ router.post('/send-otp', async (req, res) => {
     const otp       = generateOTP();
     const expiresAt = Date.now() + OTP_TTL_MS;
 
-    otpStore.set(email.toLowerCase(), {
+    otpStore.set(cleanEmail, {
       otp,
       name,
-      email,
+      email:      cleanEmail,
       password,   // plain-text — will be hashed only after OTP verification
       role:       role || 'buyer',
       district,
@@ -44,9 +46,9 @@ router.post('/send-otp', async (req, res) => {
     });
 
     // Send email
-    await sendOTPEmail(email, name, otp);
+    await sendOTPEmail(cleanEmail, name, otp);
 
-    console.log(`[OTP] Sent to ${email} | OTP: ${otp} | Expires: ${new Date(expiresAt).toISOString()}`);
+    console.log(`[OTP] Sent to ${cleanEmail} | OTP: ${otp} | Expires: ${new Date(expiresAt).toISOString()}`);
 
     return res.status(200).json({
       msg: 'Verification code sent! Please check your inbox (and spam folder).',
@@ -143,14 +145,15 @@ router.post('/verify-otp', async (req, res) => {
 router.post('/register', async (req, res) => {
   const { name, email, password, role, district } = req.body;
   try {
-    const existingUser = await User.findOne({ where: { email } });
+    const cleanEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ where: { email: cleanEmail } });
     if (existingUser) {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
     const user = await User.create({
       name,
-      email,
+      email: cleanEmail,
       password,   // hashed by model's beforeCreate hook
       role: role || 'buyer',
       district,
@@ -176,12 +179,17 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      return res.status(400).json({ msg: 'Email and password are required' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
     // ── Master Admin credential check (intercept BEFORE any DB query) ────────
     // Admins cannot self-register; this is the sole entry point for admin auth.
-    const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@farmtrust.com';
+    const ADMIN_EMAIL    = (process.env.ADMIN_EMAIL    || 'admin@farmtrust.com').trim().toLowerCase();
     const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (cleanEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const adminPayload = { user: { id: 'admin_1' } };
       return jwt.sign(
         adminPayload,
@@ -206,7 +214,7 @@ router.post('/login', async (req, res) => {
     }
 
     // ── Standard DB-backed login (Farmer / Buyer) ─────────────────────────────
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: cleanEmail } });
     if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }

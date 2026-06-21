@@ -24,4 +24,13 @@ app.use('/api/predict', predictRoutes);          // API-prefixed access: /api/pr
 app.use('/api/admin', require('./routes/admin'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Please stop the process using that port or change PORT in backend/.env.`);
+    process.exit(1);
+  }
+  console.error('Server error:', err);
+  process.exit(1);
+});

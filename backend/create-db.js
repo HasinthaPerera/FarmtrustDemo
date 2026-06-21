@@ -3,21 +3,28 @@ require('dotenv').config();
 
 async function createDatabase() {
   try {
-    // Connect without specifying database
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      port: process.env.DB_PORT
+    // Try connecting as root first (no password) to create DB and user
+    const rootConn = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: 'root',
+      password: '',
+      port: process.env.DB_PORT || 3306,
+      multipleStatements: true
     });
 
-    // Create database if it doesn't exist
-    await connection.execute('CREATE DATABASE IF NOT EXISTS farmtrust');
-    console.log('Database "farmtrust" created or already exists');
+    const sql = `
+      CREATE DATABASE IF NOT EXISTS farmtrust;
+      CREATE USER IF NOT EXISTS 'farmtrust'@'localhost' IDENTIFIED BY 'Farmtrust123';
+      GRANT ALL PRIVILEGES ON farmtrust.* TO 'farmtrust'@'localhost';
+      FLUSH PRIVILEGES;
+    `;
 
-    await connection.end();
+    await rootConn.query(sql);
+    console.log('Database and user created (or already exist).');
+    await rootConn.end();
   } catch (error) {
-    console.error('Error creating database:', error);
+    console.error('Error creating database or user:', error.message || error);
+    process.exit(1);
   }
 }
 
